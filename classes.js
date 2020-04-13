@@ -1,6 +1,6 @@
-class Animation {
+class MovingDisplay {
 
-    constructor(colours, mirroring, condition, squareDimensions, canvas, slider, speed, facesBool) {
+    constructor(colours, mirroring, condition, squareDimensions, canvas, slider=null, speed, facesBool) {
         this.colours = colours; // expressed in ABC order
         this.mirrored = mirroring;
         this.launchingType = condition[0];

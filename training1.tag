@@ -6,9 +6,8 @@
     <script src="classes.js"></script>
     <script>
         var myCanvas = document.getElementById("myCanvas");
-        var slider = null;
         var moment = 0;
-        window.myRectangle = new Animation(["red", "hidden", "purple"], false, ["reversed", 0, false, true], [50, 50], myCanvas, slider, 0.3, false);
+        window.myRectangle = new MovingDisplay(["red", "hidden", "purple"], false, ["reversed", 0, false, true], [50, 50], myCanvas, slider, 0.3, false);
 
         animateAgain();
 
@@ -31,13 +30,13 @@
                 moment++;
                 delete window.myRectangle;
                 if (moment === 1) {
-                    window.myRectangle = new Animation(["hidden", "blue", "purple"], false, ["reversed", 0, false, true], [50, 50], myCanvas, slider, 0.3, false);
+                    window.myRectangle = new MovingDisplay(["hidden", "blue", "purple"], false, ["reversed", 0, false, true], [50, 50], myCanvas, null, 0.3, false);
                 } else if (moment === 1) {
-                    window.myRectangle = new Animation(["red", "blue", "hidden"], false, ["canonical", 0, false, false], [50, 50], myCanvas, slider, 0.3, false);
+                    window.myRectangle = new MovingDisplay(["red", "blue", "hidden"], false, ["canonical", 0, false, false], [50, 50], myCanvas, null, 0.3, false);
                 } else if (moment === 2) {
-                    window.myRectangle = new Animation(["hidden", "blue", "purple"], false, ["canonical", 0, false, false], [50, 50], myCanvas, slider, 0.3, false);
+                    window.myRectangle = new MovingDisplay(["hidden", "blue", "purple"], false, ["canonical", 0, false, false], [50, 50], myCanvas, null, 0.3, false);
                 } else if (moment === 3){
-                    window.myRectangle = new Animation(["red", "blue", "hidden"], false, ["canonical", 0, false, true], [50, 50], myCanvas, slider, 0.3, false);
+                    window.myRectangle = new MovingDisplay(["red", "blue", "hidden"], false, ["canonical", 0, false, true], [50, 50], myCanvas, null, 0.3, false);
                 } else {
                     animationsFinished = true;
                 }
