@@ -5,49 +5,49 @@
     <button onclick="nextMoment()">Next</button>
     <script src="classes.js"></script>
     <script>
-    var myCanvas = document.getElementById("myCanvas");
-    var slider = null;
-    var moment = 0;
-    window.myRectangle = new Animation(["red", "hidden", "purple"], false, ["reversed", 0, false, true], [50, 50], myCanvas, slider, 0.3, false);
+        var myCanvas = document.getElementById("myCanvas");
+        var slider = null;
+        var moment = 0;
+        window.myRectangle = new Animation(["red", "hidden", "purple"], false, ["reversed", 0, false, true], [50, 50], myCanvas, slider, 0.3, false);
 
-    animateAgain();
+        animateAgain();
 
-    function animateAgain (){
-    for (var i = 0; i < window.myRectangle.animationTimer.length; i++) {
-    clearTimeout(window.myRectangle.animationTimer[i])
-    }
-    window.myRectangle.animationStarted = Infinity;
-    window.myRectangle.animationEnded = false;
-    window.myRectangle.resetSquares();
-    window.myRectangle.draw();
-    window.myRectangle.setTimeouts();
-    }
+        function animateAgain (){
+            for (var i = 0; i < window.myRectangle.animationTimer.length; i++) {
+                clearTimeout(window.myRectangle.animationTimer[i])
+            }
+            window.myRectangle.animationStarted = Infinity;
+            window.myRectangle.animationEnded = false;
+            window.myRectangle.resetSquares();
+            window.myRectangle.draw();
+            window.myRectangle.setTimeouts();
+        }
 
-    function nextMoment() {
-    let animationsFinished = false;
-    if (!window.myRectangle.animationEnded) {
-    console.log("notEnded!");
-    } else {
-    moment++;
-    delete window.myRectangle;
-    if (moment === 1) {
-    window.myRectangle = new Animation(["hidden", "blue", "purple"], false, ["reversed", 0, false, true], [50, 50], myCanvas, slider, 0.3, false);
-    } else if (moment === 1) {
-    window.myRectangle = new Animation(["red", "blue", "hidden"], false, ["canonical", 0, false, false], [50, 50], myCanvas, slider, 0.3, false);
-    } else if (moment === 2) {
-    window.myRectangle = new Animation(["hidden", "blue", "purple"], false, ["canonical", 0, false, false], [50, 50], myCanvas, slider, 0.3, false);
-    } else if (moment === 3){
-    window.myRectangle = new Animation(["red", "blue", "hidden"], false, ["canonical", 0, false, true], [50, 50], myCanvas, slider, 0.3, false);
-    } else {
-    animationsFinished = true;
-    }
-    if (!animationsFinished){
-    animateAgain();
-    } else {
-    window.location.href = "trainingTest.html"; // go to next page
-    }
-    }
-    }
+        function nextMoment() {
+            let animationsFinished = false;
+            if (!window.myRectangle.animationEnded) {
+                console.log("notEnded!");
+            } else {
+                moment++;
+                delete window.myRectangle;
+                if (moment === 1) {
+                    window.myRectangle = new Animation(["hidden", "blue", "purple"], false, ["reversed", 0, false, true], [50, 50], myCanvas, slider, 0.3, false);
+                } else if (moment === 1) {
+                    window.myRectangle = new Animation(["red", "blue", "hidden"], false, ["canonical", 0, false, false], [50, 50], myCanvas, slider, 0.3, false);
+                } else if (moment === 2) {
+                    window.myRectangle = new Animation(["hidden", "blue", "purple"], false, ["canonical", 0, false, false], [50, 50], myCanvas, slider, 0.3, false);
+                } else if (moment === 3){
+                    window.myRectangle = new Animation(["red", "blue", "hidden"], false, ["canonical", 0, false, true], [50, 50], myCanvas, slider, 0.3, false);
+                } else {
+                    animationsFinished = true;
+                }
+                if (!animationsFinished){
+                    animateAgain();
+                } else {
+                    window.location.href = "trainingTest.html"; // go to next page
+                }
+            }
+        }
 
     </script>
 </training1>
