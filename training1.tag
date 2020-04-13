@@ -9,7 +9,7 @@
         self.myCanvas = document.getElementById("myCanvas");
         self.moment = 0;
         self.window.myRectangle = new MovingDisplay(["red", "hidden", "purple"], false, ["reversed", 0, false, true], [50, 50], self.myCanvas, slider, 0.3, false);
-    
+
         animateAgain();
 
         function animateAgain (){
