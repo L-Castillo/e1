@@ -1,4 +1,8 @@
 <test-trial>
+    <div style="font-size: large; padding: 20px">
+        Please synchronize the flash with when the blue square starts moving.
+    </div>
+    <br>
     <div>
         <canvas width="950" height="400" style="border: solid black 2px" ref="myCanvas"></canvas>
         <div class="slidecontainer" id="slider">
