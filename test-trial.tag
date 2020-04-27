@@ -21,7 +21,7 @@
         self.hasErrors = false;
         self.colours = ["red", "blue", "purple"];
         self.mirroring = false;
-        self.launchingType = "canonical";
+        self.launchingType = "reversed";
         self.stickAndHole = false;
         self.squareDimensions = [50, 50];
         self.speed = 0.3;
