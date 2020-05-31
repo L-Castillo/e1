@@ -145,7 +145,7 @@ MovingDisplay = function (colours, mirroring, launchingType, stickAndHole, squar
         }
 
         // give "move At" instructions
-        if (display.launchingType === "canonical") {
+        if (display.launchTiming === "canonical") {
             display.squareList[0].moveAt = 0;
             display.squareList[1].moveAt = display.squareList[0].duration;
             display.squareList[2].moveAt = display.squareList[1].moveAt + display.squareList[1].duration;
@@ -161,7 +161,7 @@ MovingDisplay = function (colours, mirroring, launchingType, stickAndHole, squar
         }
         display.animationStarted = Infinity;
         display.animationEnded = false;
-        display.resetSquares();
+        display.reset();
         display.draw();
         display.setTimeouts();
     };
@@ -239,7 +239,7 @@ MovingDisplay = function (colours, mirroring, launchingType, stickAndHole, squar
                     display.squareList[1].dimensions[1], display.squareList[1].dimensions[0], 1 / 3 * display.squareList[1].dimensions[1]);
             }
 
-            if (display.stickAndHole) {
+            if (display.extraObjs) {
                 display.drawObjects()
             }
             window.requestAnimationFrame(display.draw.bind(display));
@@ -352,5 +352,5 @@ MovingDisplay = function (colours, mirroring, launchingType, stickAndHole, squar
     display.squareList = [];
 
     display.placeSquares();
-    display.resetSquares();
+    display.reset();
 };

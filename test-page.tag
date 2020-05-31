@@ -1,4 +1,10 @@
 <test-page>
+	<style>
+		div#instructions{
+			font-size: 22px;
+			padding: 20px;
+		}
+	</style>
 	<h1> Normal html here</h1>
 	<div>This is bound: {canBeBound}</div>
 	<button onclick={callMe}>Bound function</button>
