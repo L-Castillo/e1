@@ -38,7 +38,7 @@
         self.instructions = "Try making the screen flash as early as possible and press Next";
         self.errorText = "Try to move the slider more to the left so that the flash appears earlier";
         self.currentMoment = 0;
-        self.resultDict = {"sliderTouches": [0,0], "nextAttempts": 0};
+        self.resultDict = {"sliderTouches": [0,0], "nextAttempts": -2}; // nextAttempts = -2 so that a perfect participant, who must press next at least twice, has a value of 0. a positive value means they pressed next when slider not correct
         // define what a moving display is - common to all .tags (see inner starting comments for minor changes according to tag needs)
         self.MovingDisplay = function (colours, mirroring, launchTiming, extraObjs, squareDimensions, canvas, slider = null, speed, showFlash = false) {
             // What's different about this Moving Display?
@@ -394,6 +394,8 @@
 
         self.results = function () {
             return self.resultDict;
+            // slider touches = 2,1 -> participant touched slider twice when asked to sync early and once when asked late
+            // nextAttempts = 2 -> participant pressed "Next" twice more than absolutely necessary (value starts at -2)
         };
 
         // page-specific funcs

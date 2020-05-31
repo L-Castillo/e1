@@ -89,7 +89,7 @@
 
         self.feedbackTime = false;
         self.lockNext = true;
-        self.pageResults = {0:[], 1:[], 2:[], 3:[]};
+        self.pageResults = {0:[], 1:[], 2:[], 3:[], "presentationOrder": self.possibleMoments};
         self.errorText;
         self.feedbackText;
         self.MovingDisplay = function (colours, mirroring, launchTiming, extraObjs, squareDimensions, canvas, slider = null, speed, showFlash = false) {
@@ -441,9 +441,10 @@
         };
         self.results = function () {
             return self.pageResults;
-        };
-        self.onHidden = function () {
-            // stop binding. How?
+            // 0 - 4: what participants answered in each of these moments. e.g. if 0: 23 -> participant chose answer in self.moment0Qs with index 2
+            // and that was wrong so they then chose answer with index 3. Last item is correct item by definition
+            // presentationOrder = 2031 -> first watched moment 2, then moment 0, then moment 3, then moment 1 (see setUpNextQuestion for what each moment is)
+
         };
 
 
@@ -548,7 +549,7 @@
 
         self.getTotalErrors = function () {
             var errors = 0;
-            for (var i = 0; i < Object.keys(self.pageResults).length; i++) {
+            for (var i = 0; i < Object.keys(self.pageResults).length - 1; i++) { // length - 1 because last item is presentationOrder
                 errors += self.pageResults[i].length - 1
             }
             return errors;

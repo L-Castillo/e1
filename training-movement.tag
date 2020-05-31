@@ -398,6 +398,8 @@
 
         self.results = function () {
             return {"presentationOrder": self.possibleMoments, "watchTimes": self.timesWatched};
+            // presentationOrder = 2031 -> first watched moment 2, then moment 0, then moment 3, then moment 1 (see updateCanvas for what each moment is)
+            // watchTimes = 2413 -> moment 0 was watched twice, moment 1 watched 4 times, and so on.
         };
 
         // page specific functions

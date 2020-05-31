@@ -426,10 +426,13 @@
             // at which red was instructed to move [not at which it actually moved])
             self.rectangle.flashOnset = self.rectangle.flashOnset - self.rectangle.animationStarted;
             // write in results dict
+            // time at which each square moved
             self.resultDict["redMoved"] = self.rectangle.squareList[0].movedAt;
             self.resultDict["blueMoved"] = self.rectangle.squareList[1].movedAt;
             self.resultDict["purpleMoved"] = self.rectangle.squareList[2].movedAt;
+            // time at which flash started
             self.resultDict["flashedAt"] = self.rectangle.flashOnset;
+            // number of times participant adjusted the slider
             self.resultDict["numberSliderTouches"] = self.sliderTouchedCounter;
             return self.resultDict;
         };
