@@ -1,23 +1,8 @@
-<checking-training>
+<expectations>
     <style>
-        button.psychButton:disabled {
-            color: rgba(89, 159, 207, 0.5); /*Text transparent when button disabled*/
-        }
         div#instructions{
             font-size: 22px;
             padding: 20px;
-        }
-        p#question {
-            font-size: 22px;
-            margin: 10px;
-        }
-        label {
-            font-size: 20px;
-            padding-bottom: 5px;
-            margin: 5px;
-        }
-        input {
-            margin: 5px;
         }
         .psychErrorMessage{ /*override style*/
             font-size: 23px;
@@ -25,83 +10,42 @@
         }
 
     </style>
-    <div id = "instructions">{instructionText}</div>
-    <br>
-    <div style="width: 950px">
-        <canvas width="950" height="400" style="border: solid black 2px" ref="myCanvas"></canvas> </div>
-    <div>
-        <button class="psychButton" onclick="{manageMoments}" style="float:right;" ref="btnAnimate">Play animation</button> </div>
-    <div style="width: 450px; margin: auto">
-        <p id = "question" ref="radioQuestions">{"In this animation, " + firstMovers[currentMoment] + " will start moving. What will happen next?"}</p>
-        <div ref = "radioCont">
-            <input type="radio" id="radioA" name="1. What will happen next?" onclick="{enableActivateButton}" value="A" ref="radioA">
-            <label for="radioA" id="labelradioA">{questions[currentMoment][0]}</label>
-            <br>
-            <input type="radio" id="radioB" name="1. What will happen next?" onclick="{enableActivateButton}" value="B" ref="radioB">
-            <label for="radioB" id="labelradioB">{questions[currentMoment][1]}</label>
-            <br>
-            <input type="radio" id="radioC" name="1. What will happen next?" onclick="{enableActivateButton}" value="C" ref="radioC">
-            <label for="radioC" id="labelradioC">{questions[currentMoment][2]}</label>
-            <br>
-<!--            <input type="radio" id="radioD" name="1. What will happen next?" onclick="{enableActivateButton}" value="D" ref="radioD">-->
-<!--            <label for="radioD" id="labelradioD">{questions[currentMoment][3]}</label>-->
-<!--            <br>-->
-        </div>
-<!--        </p>-->
-        <p class="psychErrorMessage" show="{hasErrors}">{errorText}</p>
-
-        <p style="font-size: 23px; color: green" show="{feedbackTime}">{feedbackText}</p>
-
+    <div id = "instructions">
+        In the next screen you will watch an animation starting like this:
     </div>
+    <br>
+
+    <div>
+        <canvas width="950" height="400" style="border: solid black 2px" ref="myCanvas"></canvas>
+    </div>
+    <p style="font-size: 20px">Knowing that the Red square will be the first to move, write down in detail what you expect will happen: </p>
+    <textarea ref="textArea" style="width: 500px; height: 200px; margin: 0px 0px 0px 220px"></textarea>
+
+    <p class="psychErrorMessage" show="{hasErrors}">{errorText}</p>
+
     <script>
-        function shuffleArray(array){
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-
         var self = this;
+        self.hasErrors = false;
+        self.resultDict = {
+            "expectation": ""
+        };
 
-        // shuffle questions
-        self.possibleMoments = [0, 1, 2, 3, 4];
-        self.instructionText = "Please select an answer to the following questions, then press \"Play Animation\" to check your answer:"
-        // shuffleArray(self.possibleMoments);
-        self.currentIndex = 0;
-        self.currentMoment = self.possibleMoments[self.currentIndex];
 
-        self.firstMovers = ["Pink", "Red", "Red", "Blue", "Red"]; // changes question
+        // test vars that can be changed
+        self.colours = ["red", "blue", "purple"];
+        self.squareDimensions = [50, 50];
+        self.speed = 0.3;
+        self.showFlash = true;
 
-        // shuffle MCQ possible answers
-        self.moment0Qs = ["Pink and Blue will move at the same time", "Pink will move but Blue will not", "Pink will move and then drag Blue"];
-        self.moment1Qs = ["Red will move and push Blue", "Red will move and Blue will not", "Red and Blue will move at the same time"];
-        self.moment2Qs = ["Red will move and push Pink with the stick", "Red will move and Pink will not", "Red and Pink will move at the same time"];
-        self.moment3Qs = ["Pink and Blue will move at the same time", "Blue will move but Pink will not", "Blue will move and push Pink"];
-        self.moment4Qs = ["Red will move and push Blue with the stick", "Red will move and the stick will go through Blue", "Red and Blue will move at the same time"];
-        self.questionsStandardOrder = [self.moment0Qs, self.moment1Qs, self.moment2Qs, self.moment3Qs, self.moment4Qs];
-        self.questions = [];
-        for (var i = 0; i < self.questionsStandardOrder.length; i++) {
-            var qArray = self.questionsStandardOrder[i].slice();
-            shuffleArray(qArray);
-            self.questions.push(qArray);
-        }
 
-        // define correct answers
-        self.answers = ["Pink will move and then drag Blue", "Red will move and push Blue", "Red will move and push Pink with the stick", "Blue will move and push Pink", "Red will move and the stick will go through Blue"];
-
-        self.feedbackTime = false;
-        self.lockNext = true;
-        self.pageResults = {0:[], 1:[], 2:[], 3:[], 4:[], "presentationOrder": self.possibleMoments, "totalErrors": 0};
-        self.errorText;
-        self.feedbackText;
+        // define what a moving display is - common to all .tags (see inner starting comments for minor changes according to tag needs)
         self.MovingDisplay = function (colours, mirroring, launchTiming, extraObjs, squareDimensions, canvas, slider = null, speed, showFlash = false) {
             // What's different about this Moving Display?
-            // - finishing an animation leads to setUpNext (display.endAnimation)
-            // - display.endAnimation enables the Play Animation button (the button disables itself upon press)
-            // - animation ends 500ms later than usual to give time take in, as when animation ends the rectangle changes (lastFinish += 500 in display.setTimeouts)
-
+            // nothing
             var display = this;
+
             // def functions
+
             display.Square = function (colour, dimensions) {
                 var sq = this;
                 // colour
@@ -239,14 +183,10 @@
 
             display.startAnimation = function () {
                 display.animationStarted = Date.now();
-
                 window.requestAnimationFrame(display.draw.bind(display));
             };
             display.endAnimation = function () {
                 display.animationEnded = Date.now();
-
-                self.refs.btnAnimate.disabled = false;
-                self.setUpNextQuestion();
             };
 
             display.animate = function (startAt = 1000) {
@@ -271,14 +211,15 @@
                 var timeoutId;  //  start timeouts for start and end and add to a list (which allows to stop everything if animation restarted, see self.animate())
                 timeoutId = setTimeout(display.startAnimation.bind(display), startAt);
                 display.animationTimer.push(timeoutId);
-                timeoutId = setTimeout(display.endAnimation.bind(display), startAt + lastFinish + 500); // +500ms than usual, see initial comments
+                timeoutId = setTimeout(display.endAnimation.bind(display), startAt + lastFinish);
                 display.animationTimer.push(timeoutId);
                 // timings for flash
                 if (display.showFlash) {
-                    var animationSpace = lastFinish + 1000; // add 1000s so one can set flash 500ms after lastFinish
+                    var animationSpace = lastFinish + 1000; // add 1000s so one can set flash after lastFinish
                     var flashTime =  startAt - 750 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 750ms before red starts moving (250ms after animation start).
                     // 0 ----------------------- 250 --------------------- 1000 ---------------------------- lastFinish ---------------- lastFinish + 1000 -----> // time arrow (ms)
                     //(animationStart) --- (earliestPossibleFlash) ------(startAt: red starts moving) -----(lastSquare stops moving) --(last possible Flash) --->
+
                     timeoutId = setTimeout(display.displayFlash.bind(display), flashTime);
                     display.animationTimer.push(timeoutId);
                     timeoutId = setTimeout(display.displayFlash.bind(display), flashTime + 25); // this makes the flash 25ms long
@@ -422,147 +363,38 @@
             display.reset();
         };
 
-        // override functions
+        // overwrite funcs
+        self.onInit = function () {
+            // get condition info + mirroring
+            self.mirroring = self.experiment.condition.factors.mirroring;
+            self.launchTiming = self.experiment.condition.factors.order;
+            self.extraObjs = (self.experiment.condition.factors.altExplanation === "present");
+
+
+            // make rect
+            self.rectangle = new self.MovingDisplay(self.colours, self.mirroring, self.launchTiming, self.extraObjs, self.squareDimensions, self.refs.myCanvas, null, self.speed, false);
+
+        };
+
+
         self.canLeave = function () {
-            if (self.lockNext) {
-                if (!self.anyRadiosClicked()) {
-                    self.errorText = "Please answer all the questions before proceeding";
-                } else {
-                    self.errorText = "Please press Play Animation before proceeding";
-                }
+            self.hasErrors = false;
+            if (self.refs.textArea.value.length < 5){
+                self.errorText = "Please write down what you expect will happen";
+                self.hasErrors = true;
+                return false;
+            } else if (self.refs.textArea.value.length < 25) {
+                self.errorText = "Please write down in more detail what you expect will happen";
                 self.hasErrors = true;
                 return false;
             } else {
-                self.pageResults["totalErrors"] = self.getTotalErrors();
                 return true;
             }
         };
 
-        self.onInit = function () {
-            self.mirroring = self.experiment.condition.factors.mirroring;
-            self.radios = [self.refs.radioA, self.refs.radioB, self.refs.radioC];
-            self.refs.btnAnimate.disabled = true;
-            self.setUpNextQuestion();
-        };
-
         self.results = function () {
-            return self.pageResults;
-            // 0 - 4: what participants answered in each of these moments. e.g. if 0: 23 -> participant chose answer in self.moment0Qs with index 2
-            // and that was wrong so they then chose answer with index 3. Last item is correct item by definition
-            // presentationOrder = 2031 -> first watched moment 2, then moment 0, then moment 3, then moment 1 (see setUpNextQuestion for what each moment is)
-
+            self.resultDict["expectation"] = self.refs.textArea.value;
+            return self.resultDict;
         };
-
-
-
-        // page specific functions
-        self.animate = function () {
-            self.refs.btnAnimate.disabled = true;
-            self.rectangle.animate(0); // startAt = 0, not 1000 like usual
-        };
-
-        self.enableActivateButton = function () {
-            self.refs.btnAnimate.disabled = false;
-            self.hideMessages();
-
-        };
-        self.setUpNextQuestion = function () {
-            if (self.currentIndex !== 0) {
-                delete self.rectangle;
-            }
-            if (self.currentIndex === 5) {
-                self.moveOn();
-            } else {
-                self.currentMoment = self.possibleMoments[self.currentIndex];
-
-                self.uncheckRadios();
-                self.hideMessages();
-                self.refs.btnAnimate.disabled = true;
-
-                if (self.currentMoment === 0) {
-                    self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                } else if (self.currentMoment === 1) {
-                    self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                } else if (self.currentMoment === 2) {
-                    self.rectangle = new self.MovingDisplay(["red", "hidden", "purple"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                } else if (self.currentMoment === 3) {
-                    self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                } else if (self.currentMoment === 4) {
-                    self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                    self.rectangle.squareList[1].finalPosition = self.rectangle.squareList[1].startPosition // blue doesn't move
-                }
-                self.update(); // this is needed to update display of radios and hide feedback
-            }
-        };
-
-        self.uncheckRadios = function () {
-            for (var i = 0; i < self.radios.length; i++) {
-                self.radios[i].checked = false;
-            }
-        };
-
-        self.manageMoments = function () {
-            var radioInfo = self.anyRadiosClicked(true);
-            var somethingChecked = radioInfo[0];
-            var whatChecked = radioInfo[1];
-            if (!somethingChecked) {
-                self.hasErrors = true;
-                self.errorText = "Please choose an option";
-                return false;
-            } else {
-                var answerGiven = self.questions[self.currentMoment][whatChecked]; // get text of what's been answered
-                var indexAnswer = self.questionsStandardOrder[self.currentMoment].indexOf(answerGiven); // find text in standard order
-                self.pageResults[self.currentMoment].push(indexAnswer); // add standard index to results
-                self.feedbackTime = true;
-                if (self.questions[self.currentMoment][whatChecked] === self.answers[self.currentMoment]) {
-                    self.hasErrors = false;
-                    self.feedbackText = "Well done!";
-                    self.currentIndex++;
-                    self.animate();
-                } else {
-                    self.hasErrors = false;
-                    self.feedbackText = "Not correct, sorry. Try again!";
-                    self.uncheckRadios();
-                    self.refs.btnAnimate.disabled = true;
-                }
-            }
-        };
-
-        self.anyRadiosClicked = function (what=false) {
-            var somethingClicked = false;
-            var whatChecked;
-            for (var i = 0; i < self.radios.length; i++) {
-                if (self.radios[i].checked) {
-                    somethingClicked = true;
-                    whatChecked = i
-                }
-            }
-            if (!what) {
-                return somethingClicked
-            } else {
-                returnList = [somethingClicked, whatChecked];
-                return returnList;
-
-            }
-        };
-
-        self.hideMessages = function () {
-            self.hasErrors = false;
-            self.feedbackTime = false;
-        };
-        self.moveOn = function () {
-            self.lockNext = false;
-            self.finish()
-        };
-
-        self.getTotalErrors = function () {
-            var errors = 0;
-            for (var i = 0; i < 5; i++) { // i < 5 because there are 5 moments
-                errors += self.pageResults[i].length - 1
-            }
-            return errors;
-        }
-
     </script>
-
-</checking-training>
+</expectations>

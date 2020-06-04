@@ -34,15 +34,15 @@
     </div>
     <script>
         var self = this;
-        self.leave = false;
         self.instructions = "Try making the screen flash as early as possible and press Next";
         self.errorText = "Try to move the slider more to the left so that the flash appears earlier";
         self.currentMoment = 0;
-        self.resultDict = {"sliderTouches": [0,0], "nextAttempts": -2}; // nextAttempts = -2 so that a perfect participant, who must press next at least twice, has a value of 0. a positive value means they pressed next when slider not correct
+        self.resultDict = {"sliderTouches": [0,0,0], "nextAttempts": 0}; // nextAttempts = 3 for a perfect participant
         // define what a moving display is - common to all .tags (see inner starting comments for minor changes according to tag needs)
         self.MovingDisplay = function (colours, mirroring, launchTiming, extraObjs, squareDimensions, canvas, slider = null, speed, showFlash = false) {
             // What's different about this Moving Display?
-            // nothing
+            // in setTimeouts flashTime =  startAt - 500 + ... (instead of startAt - 750). This, in conjunction with self.rectangle.squareList[1].moveAt = 0 in self.onInit()
+            // makes the slider Answer here completely different to test trial (flashTime change means flash is 250ms later than in test trial, and moveAt change means bluesquare is 200ms earlier than in a canonical
             var display = this;
 
             // def functions
@@ -188,9 +188,12 @@
             };
             display.endAnimation = function () {
                 display.animationEnded = Date.now();
+                console.log("flashTime: " + (display.flashOnset - display.animationStarted));
+                console.log("BlueMoved: " + display.squareList[1].movedAt);
+                console.log("sliderValue: " + display.slider.value);
             };
 
-            display.animate = function () {
+            display.animate = function (startAt = 1000) {
                 // stop timeouts
                 for (var i = 0; i < display.animationTimer.length; i++) {
                     clearTimeout(display.animationTimer[i])
@@ -200,7 +203,7 @@
                 display.reset();
                 display.draw();
                 // and this starts the timing
-                display.setTimeouts();
+                display.setTimeouts(startAt);
             };
             display.setTimeouts = function (startInstructions = 1000) {
                 // get list of when each sq finishes moving
@@ -217,7 +220,9 @@
                 // timings for flash
                 if (display.showFlash) {
                     var animationSpace = lastFinish + 1000; // add 1000s so one can set flash 500ms after lastFinish
-                    var flashTime =  startAt - 500 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 500ms before red starts moving.
+                    var flashTime =  startAt - 500 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 750ms before red starts moving (250ms after animation start).
+                    // 0 ----------------------- 250 --------------------- 1000 ---------------------------- lastFinish ---------------- lastFinish + 1000 -----> // time arrow (ms)
+                    //(animationStart) --- (earliestPossibleFlash) ------(startAt: red starts moving) -----(lastSquare stops moving) --(last possible Flash) --->
                     timeoutId = setTimeout(display.displayFlash.bind(display), flashTime);
                     display.animationTimer.push(timeoutId);
                     timeoutId = setTimeout(display.displayFlash.bind(display), flashTime + 25); // this makes the flash 25ms long
@@ -364,7 +369,10 @@
 
         // overwrite funcs
         self.onInit = function () {
-            self.rectangle = new self.MovingDisplay(["hidden", "blue", "hidden"], false, "canonical", false, [50, 50], self.refs.myCanvas, self.refs.mySlider, 0.3, true);
+            self.mirroring = self.experiment.condition.factors.mirroring;
+            self.rectangle = new self.MovingDisplay(["hidden", "blue", "hidden"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, self.refs.mySlider, 0.3, true);
+            self.rectangle.squareList[1].moveAt = 0;
+            self.rectangle.reset();
         };
         self.onShown = function () {
             self.rectangle.animate();
@@ -373,26 +381,33 @@
         self.canLeave = function () {
             self.resultDict["nextAttempts"]++;
             self.hasErrors = false;
-            if (self.leave) {
-                return true;
-            }
-            if (self.currentMoment === 0 && self.refs.mySlider.value < 10) {
+            if(!self.rectangle.animationEnded || self.rectangle.flashOnset === -1) {  //  if animation hasn't ended or flash hasn't flashed
+                self.errorText = "Please wait until the animation ends before pressing Next";
+                self.hasErrors = true;
+                return false;
+            } else if ((self.currentMoment === 0 && self.refs.mySlider.value < 10) || (self.currentMoment === 1 && self.refs.mySlider.value > 190)) {
                 self.currentMoment++;
                 self.changeInstructions();
                 return false;
-            } else if (self.currentMoment === 1 && self.refs.mySlider.value > 190) {
+            } else if (self.currentMoment === 2) {
                 return true;
             } else {
                 self.hasErrors = true;
                 if (self.currentMoment === 0) {
                     self.errorText = "Try to move the slider more to the left so that the flash appears earlier";
-                } else {
-                    self.errorText = "Try to move the slider more to the right so that the flash appears later"
+                } else if (self.currentMoment === 1) {
+                    self.errorText = "Try to move the slider more to the right so that the flash appears later";
                 }
             }
         };
 
         self.results = function () {
+            // get flashTime
+            self.rectangle.flashOnset = self.rectangle.flashOnset - self.rectangle.animationStarted;
+            // write in results dict
+            // crucial times
+            self.resultDict["blueMoved"] = self.rectangle.squareList[1].movedAt;
+            self.resultDict["flashedAt"] = self.rectangle.flashOnset;
             return self.resultDict;
             // slider touches = 2,1 -> participant touched slider twice when asked to sync early and once when asked late
             // nextAttempts = 2 -> participant pressed "Next" twice more than absolutely necessary (value starts at -2)
@@ -406,10 +421,15 @@
 
         self.changeInstructions = function () {
             if (self.currentMoment === 1) {
-                self.instructions = "Excellent! Now make it flash as late as possible, then press next. ";
+                self.instructions = "Excellent! Now make it flash as late as possible, then press Next. ";
+                self.startTime = Date.now();
+                window.requestAnimationFrame(self.fadeToBlack.bind(self, 120, 100, 50));
+            } else if (self.currentMoment === 2) {
+                self.instructions = "Excellent! Now make it flash at the time when the blue square starts moving, then press Next (You can readjust the slider as many times as you need)";
                 self.startTime = Date.now();
                 window.requestAnimationFrame(self.fadeToBlack.bind(self, 120, 100, 50));
             }
+            self.rectangle.animate();
         };
             // color animation instruction change
         self.ms = 600;

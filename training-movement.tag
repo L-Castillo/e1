@@ -13,8 +13,9 @@
         }
     </style>
     <div id = "instructions">
-        Please press "Play Animation" to watch how these elements interact, then play next. You can press
-        "Play Animation" again if you want to re-watch the clip.
+        Please press "Play Animation" to watch how these squares interact.
+        You can press it as many times you need to re-watch the clip.
+        Make sure you understand how the squares interact before pressing "Next"
     </div>
     <br>
     <div>
@@ -32,8 +33,10 @@
 
         var self = this;
 
-        self.possibleMoments = [0,1,2,3];
-        self.timesWatched = [0, 0, 0, 0];
+
+
+        self.possibleMoments = [0,1,2,3, 4];
+        self.timesWatched = [0, 0, 0, 0, 0];
         shuffleArray(self.possibleMoments);
         self.currentIndex = 0;
         self.currentMoment = self.possibleMoments[self.currentIndex];
@@ -195,7 +198,7 @@
                 self.timesWatched[self.currentMoment]++
             };
 
-            display.animate = function () {
+            display.animate = function (startAt = 1000) {
                 // stop timeouts
                 for (var i = 0; i < display.animationTimer.length; i++) {
                     clearTimeout(display.animationTimer[i])
@@ -205,7 +208,7 @@
                 display.reset();
                 display.draw();
                 // and this starts the timing
-                display.setTimeouts();
+                display.setTimeouts(startAt);
             };
             display.setTimeouts = function (startInstructions = 1000) {
                 // get list of when each sq finishes moving
@@ -222,7 +225,9 @@
                 // timings for flash
                 if (display.showFlash) {
                     var animationSpace = lastFinish + 1000; // add 1000s so one can set flash 500ms after lastFinish
-                    var flashTime =  startAt - 500 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 500ms before red starts moving.
+                    var flashTime =  startAt - 750 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 750ms before red starts moving (250ms after animation start).
+                    // 0 ----------------------- 250 --------------------- 1000 ---------------------------- lastFinish ---------------- lastFinish + 1000 -----> // time arrow (ms)
+                    //(animationStart) --- (earliestPossibleFlash) ------(startAt: red starts moving) -----(lastSquare stops moving) --(last possible Flash) --->
                     timeoutId = setTimeout(display.displayFlash.bind(display), flashTime);
                     display.animationTimer.push(timeoutId);
                     timeoutId = setTimeout(display.displayFlash.bind(display), flashTime + 25); // this makes the flash 25ms long
@@ -380,7 +385,7 @@
                 return false;
             } else {
                 self.currentIndex++;
-                if (self.currentIndex < 4){
+                if (self.currentIndex < 5){
                     self.currentMoment = self.possibleMoments[self.currentIndex];
                     self.hasErrors = false;
                     delete self.rectangle;
@@ -393,6 +398,7 @@
         };
 
         self.onInit = function () {
+            self.mirroring = self.experiment.condition.factors.mirroring;
             self.updateCanvas();
         };
 
@@ -412,13 +418,17 @@
 
         self.updateCanvas = function () {
             if (self.currentMoment === 0) {
-                self.rectangle = new self.MovingDisplay(["red", "hidden", "purple"], false, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                self.rectangle = new self.MovingDisplay(["red", "hidden", "purple"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
             } else if (self.currentMoment === 1) {
-                self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], false, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
             } else if (self.currentMoment === 2) {
-                self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], false, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
             } else if (self.currentMoment === 3) {
-                self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], false, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
+            } else if (self.currentMoment === 4) {
+                self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                self.rectangle.squareList[1].finalPosition = self.rectangle.squareList[1].startPosition; // blue doesn't move
+                self.rectangle.reset();
             }
         };
 

@@ -13,16 +13,29 @@
             style="display: none;" width="960"
             block-by-ip="{false}" title="Experiment"
             whitelist-ips="{['']}"
+            factors="{{altExplanation:['present', 'absent'], order: ['canonical','reversed'], mirroring: [Math.floor(Math.random() * 2) === 0]}}"
 >
+<!--    TEST TAGS -->
+<!--    <training-movement></training-movement>-->
+<!--    <checking-training></checking-training>-->
+<!--    <slider-practice></slider-practice>-->
+<!--    <expectations></expectations>-->
+<!--    <test-trial></test-trial>-->
+
+
     <instructions process="{true}">
         Hello and thank you for taking part in this experiment.
 
-        In this experiment you will watch some animations and either answer some questions, or perform a task, for each of them.
+        In this experiment you will watch some animations and perform a task for each of them.
 
-        <b style="color:red">WARNING: This experiment contains flashing lights.</b>
 
         Whenever you are ready, click next to see more detailed instructions and make sure you read them carefully.
 
+    </instructions>
+    <instructions process ="{true}">
+        <b style="color:red">WARNING: This experiment contains flashing lights.</b>
+
+        If you believe you will be affected please leave the experiment now.
     </instructions>
 
     <gdpr institution="UCL" principal="Lucas Castillo" email="lucas.castillo.19@ucl.ac.uk" ethics="EP/2017/005" controller="data-protection@ucl.ac.uk"></gdpr>
@@ -30,7 +43,7 @@
     <consent></consent>
 
      <instructions process="{true}">
-         In the following screen, you will watch some animations in order to learn how different elements interact. Please watch carefully.
+         In the following screen, you will watch some animations in order to learn how different squares interact. Please watch carefully.
 
          Afterwards, you will be asked to predict how an animation will end.
      </instructions>
@@ -48,9 +61,12 @@
     <slider-practice></slider-practice>
 
     <instructions>
-        This is the end of the instructions. Next you will now see an animation involving different squares. You will be asked to synchronize the flash on the screen with the time when the blue square starts moving.
+        This is the end of the instructions. Next you will see an animation involving different squares. First you will be asked to write your expectations.
+        Then you will be asked to synchronize the flash on the screen with the time when the blue square starts moving.
         As you saw before, you can change the moment the flash appears on screen by moving the slider.
     </instructions>
+
+    <expectations></expectations>
 
     <test-trial></test-trial>
 
