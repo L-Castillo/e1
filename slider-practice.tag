@@ -188,9 +188,6 @@
             };
             display.endAnimation = function () {
                 display.animationEnded = Date.now();
-                console.log("flashTime: " + (display.flashOnset - display.animationStarted));
-                console.log("BlueMoved: " + display.squareList[1].movedAt);
-                console.log("sliderValue: " + display.slider.value);
             };
 
             display.animate = function (startAt = 1000) {

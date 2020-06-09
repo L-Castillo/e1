@@ -428,6 +428,12 @@
             } else if (self.currentMoment === 4) {
                 self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
                 self.rectangle.squareList[1].finalPosition = self.rectangle.squareList[1].startPosition; // blue doesn't move
+                if (self.mirroring){
+                    self.rectangle.squareList[0].finalPosition[0] = self.rectangle.squareList[0].finalPosition[0] + 30; // red moves less
+                } else{
+                    self.rectangle.squareList[0].finalPosition[0] = self.rectangle.squareList[0].finalPosition[0] - 30; // red moves less
+                }
+                self.rectangle.squareList[0].duration = Math.abs(self.rectangle.squareList[0].finalPosition[0] - self.rectangle.squareList[0].startPosition[0]) / self.rectangle.speed; // make sure speed is the same
                 self.rectangle.reset();
             }
         };

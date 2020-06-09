@@ -49,22 +49,8 @@
             "numberSliderTouches":"",
         };
 
-        // set test according to condition
 
-        // +-----------+-----+-----------+----------+-----------+----------+
-        // |           |     |           Alternative Explanation           |
-        // |           |     |          Yes         |          No          |
-        // |           |     |---------------------------------------------|
-        // |           |     | Canonical | Reversed | Canonical | Reversed |
-        // | Mirroring | Yes | 0         | 1        | 2         | 3        |
-        // |           | No  | 4         | 5        | 6         | 7        |
-        // +-----------+-----+-----------+----------+-----------+----------+
-
-        self.condition = 4;
-        self.mirroring = (self.condition < 4);
-        self.launchTiming = (self.condition % 2 === 0) ? "canonical" : "reversed";
-        self.extraObjs = (self.condition % 4 < 2);
-        // other test vars that can be changed
+        // test vars that can be changed
         self.colours = ["red", "blue", "purple"];
         self.squareDimensions = [50, 50];
         self.speed = 0.3;
@@ -222,7 +208,7 @@
                 display.animationEnded = Date.now();
             };
 
-            display.animate = function () {
+            display.animate = function (startAt = 1000) {
                 // stop timeouts
                 for (var i = 0; i < display.animationTimer.length; i++) {
                     clearTimeout(display.animationTimer[i])
@@ -232,7 +218,7 @@
                 display.reset();
                 display.draw();
                 // and this starts the timing
-                display.setTimeouts();
+                display.setTimeouts(startAt);
             };
             display.setTimeouts = function (startInstructions = 1000) {
                 // get list of when each sq finishes moving
@@ -248,8 +234,11 @@
                 display.animationTimer.push(timeoutId);
                 // timings for flash
                 if (display.showFlash) {
-                    var animationSpace = lastFinish + 1000; // add 1000s so one can set flash 500ms after lastFinish
-                    var flashTime =  startAt - 500 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 500ms before red starts moving.
+                    var animationSpace = lastFinish + 1000; // add 1000s so one can set flash after lastFinish
+                    var flashTime =  startAt - 750 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 750ms before red starts moving (250ms after animation start).
+                    // 0 ----------------------- 250 --------------------- 1000 ---------------------------- lastFinish ---------------- lastFinish + 1000 -----> // time arrow (ms)
+                    //(animationStart) --- (earliestPossibleFlash) ------(startAt: red starts moving) -----(lastSquare stops moving) --(last possible Flash) --->
+
                     timeoutId = setTimeout(display.displayFlash.bind(display), flashTime);
                     display.animationTimer.push(timeoutId);
                     timeoutId = setTimeout(display.displayFlash.bind(display), flashTime + 25); // this makes the flash 25ms long
@@ -395,15 +384,19 @@
 
         // overwrite funcs
         self.onInit = function () {
+            // get condition info + mirroring
+            self.mirroring = self.experiment.condition.factors.mirroring;
+            self.launchTiming = self.experiment.condition.factors.order;
+            self.extraObjs = (self.experiment.condition.factors.altExplanation === "present");
+
+
             // make rect
             self.rectangle = new self.MovingDisplay(self.colours, self.mirroring, self.launchTiming, self.extraObjs, self.squareDimensions, self.refs.myCanvas, self.refs.mySlider, self.speed, self.showFlash);
 
-            // if slider starting value is random use code below
-            // self.sliderValue = (Math.floor(Math.random() * 200) + 1);
-            // self.resultDict["sliderStartingPosition"] = self.sliderValue;
         };
 
         self.onShown = function () {
+
             self.rectangle.animate();
         };
 

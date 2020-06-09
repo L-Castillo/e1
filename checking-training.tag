@@ -66,7 +66,7 @@
         // shuffle questions
         self.possibleMoments = [0, 1, 2, 3, 4];
         self.instructionText = "Please select an answer to the following questions, then press \"Play Animation\" to check your answer:"
-        // shuffleArray(self.possibleMoments);
+        shuffleArray(self.possibleMoments);
         self.currentIndex = 0;
         self.currentMoment = self.possibleMoments[self.currentIndex];
 
@@ -489,7 +489,14 @@
                     self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
                 } else if (self.currentMoment === 4) {
                     self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                    self.rectangle.squareList[1].finalPosition = self.rectangle.squareList[1].startPosition // blue doesn't move
+                    self.rectangle.squareList[1].finalPosition = self.rectangle.squareList[1].startPosition; // blue doesn't move
+                    if (self.mirroring){
+                        self.rectangle.squareList[0].finalPosition[0] = self.rectangle.squareList[0].finalPosition[0] + 30; // red moves less
+                    } else{
+                        self.rectangle.squareList[0].finalPosition[0] = self.rectangle.squareList[0].finalPosition[0] - 30; // red moves less
+                    }
+                    self.rectangle.squareList[0].duration = Math.abs(self.rectangle.squareList[0].finalPosition[0] - self.rectangle.squareList[0].startPosition[0]) / self.rectangle.speed; // make sure speed is the same
+                    self.rectangle.reset();
                 }
                 self.update(); // this is needed to update display of radios and hide feedback
             }
