@@ -13,9 +13,9 @@
         }
     </style>
     <div id = "instructions">
-        Please press "Play Animation" to watch how these squares interact.
+        Please press "Play Animation" to watch how these objects interact.
         You can press it as many times you need to re-watch the clip.
-        Make sure you understand how the squares interact before pressing "Next"
+        Make sure you understand how the objects interact before pressing "Next"
     </div>
     <br>
     <div>
@@ -23,6 +23,7 @@
         <button class="psychButton" onclick="{animate}" style="float:right" ref="btnAnimate">Play animation</button>
         <p class="psychErrorMessage" show="{hasErrors}" style="margin: auto; text-align: center">{errorText}</p>
     </div>
+
     <script>
         function shuffleArray(array){
             for (let i = array.length - 1; i > 0; i--) {
@@ -33,9 +34,7 @@
 
         var self = this;
 
-
-
-        self.possibleMoments = [0,1,2,3, 4];
+        self.possibleMoments = [0, 1, 2, 3, 4];
         self.timesWatched = [0, 0, 0, 0, 0];
         shuffleArray(self.possibleMoments);
         self.currentIndex = 0;
@@ -135,6 +134,7 @@
                 }
                 display.setUp();
             };
+
             display.setUp = function () {
                 var canvasMargin = display.canvas.width / 4;
 
@@ -186,7 +186,6 @@
                 display.animationEnded = false;
             };
 
-
             display.startAnimation = function () {
                 display.animationStarted = Date.now();
                 window.requestAnimationFrame(display.draw.bind(display));
@@ -210,12 +209,21 @@
                 // and this starts the timing
                 display.setTimeouts(startAt);
             };
-            display.setTimeouts = function (startInstructions = 1000) {
+
+            display.getLastFinish = function () {
                 // get list of when each sq finishes moving
-                var finishTimings = display.squareList.map(function (obj) {
-                    return obj.moveAt + obj.duration
-                });
-                var lastFinish = Math.max.apply(null, finishTimings); // and what time is last
+                var finishTimings = [];
+                for (var i = 0; i < 3; i++) {
+                    if (display.squareList[i].colourName !== "hidden") {
+                        finishTimings.push((display.squareList[i].moveAt + display.squareList[i].duration));
+                    }
+                };
+                // and what time is last
+                return Math.max.apply(null, finishTimings);
+            };
+
+            display.setTimeouts = function (startInstructions = 1000) {
+                var lastFinish = display.getLastFinish();
                 var startAt = startInstructions; // some external callings may want no delay when starting (e.g. check training tags). 1000ms lets page load up
                 var timeoutId;  //  start timeouts for start and end and add to a list (which allows to stop everything if animation restarted, see self.animate())
                 timeoutId = setTimeout(display.startAnimation.bind(display), startAt);
@@ -238,6 +246,7 @@
                 // empty canvas
                 var ctx = display.canvas.getContext("2d");
                 ctx.clearRect(0, 0, display.canvas.width, display.canvas.height);
+
                 // draw squares
                 var step = Date.now() - display.animationStarted;
                 for (var i = 0; i < display.squareList.length; i++) {
@@ -347,6 +356,8 @@
             };
 
 
+
+
             // initialize attributes
             display.colours = colours; // expressed in ABC order
             display.mirrored = mirroring;
@@ -359,8 +370,9 @@
             display.showFlash = showFlash;
 
             display.holeColour = "#d9d2a6";
+            display.pauseColour = "#408040";
             display.animationStarted = Infinity;
-            display.animationEnded = false;
+            display.animationEnded = true;
             display.flashState = false; // is the canvas flashing at the moment?
             display.animationTimer = []; // holds all the timeout ids so cancelling is easy
             display.durations = [];
@@ -370,7 +382,6 @@
             display.placeSquares();
             display.reset();
         };
-
 
 
         // overwrite funcs
@@ -412,7 +423,7 @@
         self.animate = function () {
             self.refs.btnAnimate.disabled = true;
             self.hasErrors = false;
-            self.rectangle.animate();
+            self.rectangle.animate(500);
         };
 
 
@@ -426,15 +437,28 @@
             } else if (self.currentMoment === 3) {
                 self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
             } else if (self.currentMoment === 4) {
-                self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                self.rectangle.squareList[1].finalPosition = self.rectangle.squareList[1].startPosition; // blue doesn't move
-                if (self.mirroring){
-                    self.rectangle.squareList[0].finalPosition[0] = self.rectangle.squareList[0].finalPosition[0] + 30; // red moves less
-                } else{
-                    self.rectangle.squareList[0].finalPosition[0] = self.rectangle.squareList[0].finalPosition[0] - 30; // red moves less
+                self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                self.rectangle.squareList[1].finalPosition = self.rectangle.squareList[1].startPosition;
+                if (self.mirroring) {
+                    self.rectangle.squareList[0].finalPosition[0] = self.rectangle.squareList[0].finalPosition[0] - 100;
+                } else {
+                    self.rectangle.squareList[0].finalPosition[0] = self.rectangle.squareList[0].finalPosition[0] + 100;
                 }
-                self.rectangle.squareList[0].duration = Math.abs(self.rectangle.squareList[0].finalPosition[0] - self.rectangle.squareList[0].startPosition[0]) / self.rectangle.speed; // make sure speed is the same
+
+                self.rectangle.squareList[0].duration = Math.abs(self.rectangle.squareList[0].finalPosition[0] - self.rectangle.squareList[0].startPosition[0]) / self.rectangle.speed;
+                self.rectangle.squareList[1].duration = Math.abs(self.rectangle.squareList[1].finalPosition[0] - self.rectangle.squareList[1].startPosition[0]) / self.rectangle.speed;
+                self.rectangle.squareList[0].colour = "#ffffff";
                 self.rectangle.reset();
+                self.rectangle.draw();
+
+                // self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                // if (self.mirroring) {
+                //     self.rectangle.squareList[1].finalPosition[0] = self.rectangle.squareList[1].finalPosition[0] - 20;
+                // } else {
+                //     self.rectangle.squareList[1].finalPosition[0] = self.rectangle.squareList[1].finalPosition[0] + 20;
+                // }
+                // self.rectangle.squareList[1].duration = Math.abs(self.rectangle.squareList[1].finalPosition[0] - self.rectangle.squareList[1].startPosition[0]) / self.rectangle.speed;
+                // self.rectangle.reset();
             }
         };
 

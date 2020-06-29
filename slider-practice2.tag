@@ -1,4 +1,4 @@
-<test-trial>
+<slider-practice2>
     <style>
         div#instructions{
             font-size: 22px;
@@ -8,60 +8,34 @@
             font-size: 23px;
             text-align: center;
         }
-
+        label {
+            font-size: 20px;
+        }
     </style>
-    <div id = "instructions">
-        Please synchronize the flash with when the <b style="color: #0000FF">blue</b> square starts moving.
-    </div>
-    <br>
 
+    <div id = "instructions" ref="instructionText"> {instructions} </div>
     <div>
         <canvas width="950" height="400" style="border: solid black 2px" ref="myCanvas"></canvas>
+        <div style="width: 950px">
+            <label for="slider">Early</label>
+            <label for="slider" style="float: right">Late</label>
+        </div>
+        <div class="slidecontainer" id="sliderCont">
+            <input id = "slider" onmouseup="{sliderMouseUp}" type="range" min="1" max="200" value="100" class="slider" style="width:950px" ref="mySlider">
+        </div>
+        <p class="psychErrorMessage" show="{hasErrors}" >{errorText}</p>
     </div>
-
-    <div style="width: 950px">
-        <label for="slider">Early</label>
-        <label for="slider" style="float: right">Late</label>
-    </div>
-    <div class="slidecontainer" id="slider">
-        <input onmouseup="{sliderMouseUp}" type="range" min="1" max="200"
-               value="{sliderValue}"
-               class="slider"
-               style="width:950px"
-               ref="mySlider"
-               id = "mySlider"
-               >
-    </div>
-    <p class="psychErrorMessage" show="{hasErrors}">{errorText}</p>
-
-
-
     <script>
         var self = this;
-        self.sliderValue = 0;   // change self.onInit() to make this random
-        self.sliderTouchedCounter = 0;
-        self.hasErrors = false;
-        self.resultDict = {
-            "redMoved":"",
-            "blueMoved":"",
-            "purpleMoved":"",
-            "animationEnded": "",
-            "flashedAt":"",
-            "numberSliderTouches":"",
-        };
-
-
-        // test vars that can be changed
-        self.colours = ["red", "blue", "purple"];
-        self.squareDimensions = [50, 50];
-        self.speed = 0.3;
-        self.showFlash = true;
-
-
+        self.instructions = "Try making the screen flash as early as possible and press Next";
+        self.errorText = "Try to move the slider more to the left so that the flash appears earlier";
+        self.currentMoment = 0;
+        self.resultDict = {"sliderTouches": [0,0,0], "nextAttempts": 0}; // nextAttempts = 3 for a perfect participant
         // define what a moving display is - common to all .tags (see inner starting comments for minor changes according to tag needs)
         self.MovingDisplay = function (colours, mirroring, launchTiming, extraObjs, squareDimensions, canvas, slider = null, speed, showFlash = false) {
             // What's different about this Moving Display?
-            // nothing
+            // in setTimeouts flashTime =  startAt - 500 + ... (instead of startAt - 750). This, in conjunction with self.rectangle.squareList[1].moveAt = 0 in self.onInit()
+            // makes the slider Answer here completely different to test trial (flashTime change means flash is 250ms later than in test trial, and moveAt change means bluesquare is 200ms earlier than in a canonical
             var display = this;
 
             // def functions
@@ -126,8 +100,10 @@
                 sq.obedientDraw = function (canvas) {
                     // draws sq in its position, without asking questions! useful sometimes
                     var ctx = canvas.getContext("2d");
-                    ctx.fillStyle = sq.colour;
-                    ctx.fillRect(sq.position[0], sq.position[1], sq.dimensions[0], sq.dimensions[1]);
+                    if (sq.colourName  !== "hidden") {
+                        ctx.fillStyle = sq.colour;
+                        ctx.fillRect(sq.position[0], sq.position[1], sq.dimensions[0], sq.dimensions[1]);
+                    }
                 };
 
 
@@ -149,6 +125,7 @@
                 }
                 display.setUp();
             };
+
             display.setUp = function () {
                 var canvasMargin = display.canvas.width / 4;
 
@@ -189,6 +166,7 @@
                     display.squareList[1].moveAt = display.squareList[2].moveAt + display.squareList[2].duration;
                 }
             };
+
             display.reset = function () {
                 // reset squares to startPosition
                 for (var i = 0; i < 3; i++) {
@@ -200,11 +178,47 @@
                 display.animationEnded = false;
             };
 
+            display.getTrueLastFinish = function () {
+                // get list of when each sq finishes moving
+                var finishTimings = [];
+                for (var i = 0; i < 3; i++) {
+                    if (display.squareList[i].colourName !== "hidden") {
+                        finishTimings.push(display.squareList[i].moveAt + display.squareList[i].duration);
+                    }
+                }
+                 // and what time is last
+                return Math.max.apply(null, finishTimings);
+            };
+
+            display.setTimeouts = function (startInstructions = 1000) {
+                var finishTimings = display.squareList.map(function (obj) {
+                    return obj.moveAt + obj.duration
+                });
+                var lastFinish = Math.max.apply(null, finishTimings); // and what time is last
+                var startAt = startInstructions; // some external callings may want no delay when starting (e.g. check training tags). 1000ms lets page load up
+                var timeoutId;  //  start timeouts for start and end and add to a list (which allows to stop everything if animation restarted, see self.animate())
+                timeoutId = setTimeout(display.startAnimation.bind(display), startAt);
+                display.animationTimer.push(timeoutId);
+                timeoutId = setTimeout(display.endAnimation.bind(display), startAt + display.getTrueLastFinish()); // using getTrueLastFinish triggers endAnimation when Blue ends
+                display.animationTimer.push(timeoutId);
+                // timings for flash
+                if (display.showFlash) {
+                    var animationSpace = lastFinish + 1000; // add 1000s so one can set flash 500ms after lastFinish
+                    var flashTime =  startAt - 500 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 750ms before red starts moving (250ms after animation start).
+                    // 0 ----------------------- 250 --------------------- 1000 ---------------------------- lastFinish ---------------- lastFinish + 1000 -----> // time arrow (ms)
+                    //(animationStart) --- (earliestPossibleFlash) ------(startAt: red starts moving) -----(lastSquare stops moving) --(last possible Flash) --->
+                    timeoutId = setTimeout(display.displayFlash.bind(display), flashTime);
+                    display.animationTimer.push(timeoutId);
+                    timeoutId = setTimeout(display.displayFlash.bind(display), flashTime + 25); // this makes the flash 25ms long
+                    display.animationTimer.push(timeoutId);
+                }
+            };
 
             display.startAnimation = function () {
                 display.animationStarted = Date.now();
                 window.requestAnimationFrame(display.draw.bind(display));
             };
+
             display.endAnimation = function () {
                 display.animationEnded = Date.now();
             };
@@ -221,35 +235,12 @@
                 // and this starts the timing
                 display.setTimeouts(startAt);
             };
-            display.setTimeouts = function (startInstructions = 1000) {
-                // get list of when each sq finishes moving
-                var finishTimings = display.squareList.map(function (obj) {
-                    return obj.moveAt + obj.duration
-                });
-                var lastFinish = Math.max.apply(null, finishTimings); // and what time is last
-                var startAt = startInstructions; // some external callings may want no delay when starting (e.g. check training tags). 1000ms lets page load up
-                var timeoutId;  //  start timeouts for start and end and add to a list (which allows to stop everything if animation restarted, see self.animate())
-                timeoutId = setTimeout(display.startAnimation.bind(display), startAt);
-                display.animationTimer.push(timeoutId);
-                timeoutId = setTimeout(display.endAnimation.bind(display), startAt + lastFinish);
-                display.animationTimer.push(timeoutId);
-                // timings for flash
-                if (display.showFlash) {
-                    var animationSpace = lastFinish + 1000; // add 1000s so one can set flash after lastFinish
-                    var flashTime =  startAt - 750 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 750ms before red starts moving (250ms after animation start).
-                    // 0 ----------------------- 250 --------------------- 1000 ---------------------------- lastFinish ---------------- lastFinish + 1000 -----> // time arrow (ms)
-                    //(animationStart) --- (earliestPossibleFlash) ------(startAt: red starts moving) -----(lastSquare stops moving) --(last possible Flash) --->
 
-                    timeoutId = setTimeout(display.displayFlash.bind(display), flashTime);
-                    display.animationTimer.push(timeoutId);
-                    timeoutId = setTimeout(display.displayFlash.bind(display), flashTime + 25); // this makes the flash 25ms long
-                    display.animationTimer.push(timeoutId);
-                }
-            };
             display.draw = function () {
                 // empty canvas
                 var ctx = display.canvas.getContext("2d");
                 ctx.clearRect(0, 0, display.canvas.width, display.canvas.height);
+
                 // draw squares
                 var step = Date.now() - display.animationStarted;
                 for (var i = 0; i < display.squareList.length; i++) {
@@ -274,6 +265,7 @@
                     window.requestAnimationFrame(display.draw.bind(display));
                 }
             };
+
             display.drawExtraObjects = function () {
                 var ctx = display.canvas.getContext('2d');
                 // some vars to make more legible
@@ -329,6 +321,7 @@
                     ctx.stroke();
                 }
             };
+
             display.displayFlash = function () {
                 if (display.showFlash === true) {
                     if (display.flashState === false) {
@@ -336,23 +329,48 @@
                         display.canvas.style.backgroundColor = "black";
                         display.flashState = true;
 
-                        // make squares black if they are hidden
+                        // make squares black
                         for (var i = 0; i < display.squareList.length; i++) {
-                            if (display.squareList[i].colourName === "hidden") {
-                                display.squareList[i].colour = "#000000";
-                                display.squareList[i].obedientDraw(display.canvas);
-                            }
+                            display.squareList[i].colour = "#000000";
+                            // if (display.squareList[i].colourName === "hidden") {
+                            //     display.squareList[i].colour = "#000000";
+                            //     // display.squareList[i].obedientDraw(display.canvas);
+                            // }
                         }
+                        display.holeColour = "#000000";
                     } else {
                         display.canvas.style.backgroundColor = "white";
                         display.flashState = false;
                         // make squares white again if they are hidden
                         for (var i = 0; i < display.squareList.length; i++) {
-                            if (display.squareList[i].colourName === "hidden") {
-                                display.squareList[i].colour = "#FFFFFF";
-                                display.squareList[i].obedientDraw(display.canvas);
+                            switch (display.squareList[i].colourName) {
+                                case "red":
+                                    display.squareList[i].colour = "#FF0000";
+                                    break;
+                                case "green":
+                                    display.squareList[i].colour = "#00FF00";
+                                    break;
+                                case "blue":
+                                    display.squareList[i].colour = "#0000FF";
+                                    break;
+                                case "black":
+                                    display.squareList[i].colour = "#000000";
+                                    break;
+                                case "hidden":
+                                    display.squareList[i].colour = "#FFFFFF";
+                                    break;
+                                case "purple":
+                                    display.squareList[i].colour = "#ec00f0";
+                                    break;
                             }
+                            //
+                            // if (display.squareList[i].colourName === "hidden") {
+                            //     display.squareList[i].colour = "#FFFFFF";
+                            //     display.squareList[i].obedientDraw(display.canvas);
+                            // }
                         }
+                        display.holeColour = "#d9d2a6";
+
                     }
                     display.draw(); // avoids funky lines if animation has ended
                 }
@@ -371,6 +389,7 @@
             display.showFlash = showFlash;
 
             display.holeColour = "#d9d2a6";
+            display.pauseColour = "#408040";
             display.animationStarted = Infinity;
             display.animationEnded = true;
             display.flashState = false; // is the canvas flashing at the moment?
@@ -383,59 +402,106 @@
             display.reset();
         };
 
+
         // overwrite funcs
         self.onInit = function () {
-            // get condition info + mirroring
             self.mirroring = self.experiment.condition.factors.mirroring;
-            self.launchTiming = self.experiment.condition.factors.order;
-            self.extraObjs = (self.experiment.condition.factors.altExplanation === "present");
-
-
-            // make rect
-            self.rectangle = new self.MovingDisplay(self.colours, self.mirroring, self.launchTiming, self.extraObjs, self.squareDimensions, self.refs.myCanvas, self.refs.mySlider, self.speed, self.showFlash);
-
+            self.rectangle = new self.MovingDisplay(["hidden", "blue", "hidden"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, self.refs.mySlider, 0.3, true);
+            self.rectangle.squareList[1].moveAt = 0;
+            self.rectangle.reset();
         };
-
         self.onShown = function () {
-
             self.rectangle.animate();
         };
 
         self.canLeave = function () {
+            var PSS = self.rectangle.flashOnset - self.rectangle.animationStarted;
+            self.resultDict["nextAttempts"]++;
             self.hasErrors = false;
-            if (self.sliderTouchedCounter === 0) {
-                self.errorText = "Please move the slider to synchronize the flash with when the blue square starts moving";
+            if(!self.rectangle.animationEnded || self.rectangle.flashOnset === -1) {  //  if animation hasn't ended or flash hasn't flashed
+                self.errorText = "Please wait until the animation ends before pressing Next";
                 self.hasErrors = true;
                 return false;
-            } else if(!self.rectangle.animationEnded || self.rectangle.flashOnset === -1){  //  if animation hasn't ended or flash hasn't flashed
-                self.errorText = "Please wait until the animation ends";
-                self.hasErrors = true;
-            } else {
+            } else if ((self.currentMoment === 0 && self.refs.mySlider.value < 20) || (self.currentMoment === 1 && self.refs.mySlider.value > 180)) {
+                self.currentMoment++;
+                self.changeInstructions();
+                return false;
+            } else if (self.currentMoment === 2 && (Math.abs(PSS) <  400)) {
                 return true;
+            } else {
+                self.hasErrors = true;
+                if (self.currentMoment === 0) {
+                    self.errorText = "Try to move the slider more to the left so that the flash appears earlier";
+                } else if (self.currentMoment === 1) {
+                    self.errorText = "Try to move the slider more to the right so that the flash appears later. Notice that the new instructions want you to make the flash appear as late as possible.";
+                } else if (self.currentMoment === 2) {
+                    if (PSS < -400) {
+                        self.errorText = "That's a bit too early. Try moving the slider more to the right so that the flash happens when the blue square starts moving";
+                    } else if (PSS > 400) {
+                        self.errorText = "That's a bit too late. Try moving the slider more to the left so that the flash happens when the blue square starts moving";
+                    }
+                }
             }
         };
 
         self.results = function () {
-            // make flashOnset relative to animation start (negative value means flash before the time
-            // at which red was instructed to move [not at which it actually moved])
+            // get flashTime
             self.rectangle.flashOnset = self.rectangle.flashOnset - self.rectangle.animationStarted;
             // write in results dict
-            // time at which each square moved
-            self.resultDict["redMoved"] = self.rectangle.squareList[0].movedAt;
+            // crucial times
             self.resultDict["blueMoved"] = self.rectangle.squareList[1].movedAt;
-            self.resultDict["purpleMoved"] = self.rectangle.squareList[2].movedAt;
-            self.resultDict["animationEnded"] = self.rectangle.animationEnded - self.rectangle.animationStarted;
-            // time at which flash started
             self.resultDict["flashedAt"] = self.rectangle.flashOnset;
-            // number of times participant adjusted the slider
-            self.resultDict["numberSliderTouches"] = self.sliderTouchedCounter;
             return self.resultDict;
+            // slider touches = 2,1 -> participant touched slider twice when asked to sync early and once when asked late
+            // nextAttempts = 2 -> participant pressed "Next" twice more than absolutely necessary (value starts at -2)
         };
 
         // page-specific funcs
         self.sliderMouseUp = function () {
-            self.sliderTouchedCounter++;
+            self.hideErrors();
             self.rectangle.animate();
-        }
+            self.resultDict["sliderTouches"][self.currentMoment]++
+        };
+
+        self.changeInstructions = function () {
+            if (self.currentMoment === 1) {
+                self.instructions = "Excellent! Now make it flash as late as possible, then press Next. ";
+                self.startTime = Date.now();
+                window.requestAnimationFrame(self.fadeToBlack.bind(self, 60, 100, 50));
+            } else if (self.currentMoment === 2) {
+                self.instructions = "Excellent! Now make it flash at the time when the blue square starts moving, then press Next (You can readjust the slider as many times as you need)";
+                self.startTime = Date.now();
+                window.requestAnimationFrame(self.fadeToBlack.bind(self, 60, 100, 50));
+            }
+            self.rectangle.animate();
+        };
+
+        self.hideErrors = function () {
+            self.hasErrors = false;
+            self.update();
+        };
+
+
+
+        // color animation instruction change
+        self.ms = 600;
+        self.brightnessChange = 50;
+        self.brightnessPerStep = self.brightnessChange / self.ms;
+        self.startTime = -1;
+
+        self.fadeToBlack = function (hue, sat, bri) {
+            var step = Date.now() - self.startTime;
+            var endBri = bri - step * self.brightnessPerStep;
+            self.refs.instructionText.style.color = "hsl(" + hue + ", " + sat + "%," + endBri + "%)";
+
+            // self.update();
+            if (endBri > 0) {
+                window.requestAnimationFrame(self.fadeToBlack.bind(self, hue, sat, bri));
+            }
+                    };
+
+
+
+
     </script>
-</test-trial>
+</slider-practice2>

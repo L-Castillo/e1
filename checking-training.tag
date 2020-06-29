@@ -33,6 +33,7 @@
         <button class="psychButton" onclick="{manageMoments}" style="float:right;" ref="btnAnimate">Play animation</button> </div>
     <div style="width: 450px; margin: auto">
         <p id = "question" ref="radioQuestions">{"In this animation, " + firstMovers[currentMoment] + " will start moving. What will happen next?"}</p>
+        <button class="psychButton" style="display: none;margin-left: 165px;"> Watch Again</button>
         <div ref = "radioCont">
             <input type="radio" id="radioA" name="1. What will happen next?" onclick="{enableActivateButton}" value="A" ref="radioA">
             <label for="radioA" id="labelradioA">{questions[currentMoment][0]}</label>
@@ -43,9 +44,6 @@
             <input type="radio" id="radioC" name="1. What will happen next?" onclick="{enableActivateButton}" value="C" ref="radioC">
             <label for="radioC" id="labelradioC">{questions[currentMoment][2]}</label>
             <br>
-<!--            <input type="radio" id="radioD" name="1. What will happen next?" onclick="{enableActivateButton}" value="D" ref="radioD">-->
-<!--            <label for="radioD" id="labelradioD">{questions[currentMoment][3]}</label>-->
-<!--            <br>-->
         </div>
 <!--        </p>-->
         <p class="psychErrorMessage" show="{hasErrors}">{errorText}</p>
@@ -65,7 +63,7 @@
 
         // shuffle questions
         self.possibleMoments = [0, 1, 2, 3, 4];
-        self.instructionText = "Please select an answer to the following questions, then press \"Play Animation\" to check your answer:"
+        self.instructionText = "Please select an answer to the following questions, then press \"Play Animation\" to check your answer:";
         shuffleArray(self.possibleMoments);
         self.currentIndex = 0;
         self.currentMoment = self.possibleMoments[self.currentIndex];
@@ -94,6 +92,9 @@
         self.pageResults = {0:[], 1:[], 2:[], 3:[], 4:[], "presentationOrder": self.possibleMoments, "totalErrors": 0};
         self.errorText;
         self.feedbackText;
+        self.animateBecauseWrong = false;
+
+
         self.MovingDisplay = function (colours, mirroring, launchTiming, extraObjs, squareDimensions, canvas, slider = null, speed, showFlash = false) {
             // What's different about this Moving Display?
             // - finishing an animation leads to setUpNext (display.endAnimation)
@@ -289,6 +290,7 @@
                 // empty canvas
                 var ctx = display.canvas.getContext("2d");
                 ctx.clearRect(0, 0, display.canvas.width, display.canvas.height);
+
                 // draw squares
                 var step = Date.now() - display.animationStarted;
                 for (var i = 0; i < display.squareList.length; i++) {
@@ -310,7 +312,10 @@
                     display.drawExtraObjects()
                 }
                 if (!display.animationEnded) {
+                    display.drawPlay();
                     window.requestAnimationFrame(display.draw.bind(display));
+                } else {
+                    display.drawPause();
                 }
             };
             display.drawExtraObjects = function () {
@@ -467,38 +472,42 @@
 
         };
         self.setUpNextQuestion = function () {
-            if (self.currentIndex !== 0) {
-                delete self.rectangle;
-            }
-            if (self.currentIndex === 5) {
-                self.moveOn();
-            } else {
-                self.currentMoment = self.possibleMoments[self.currentIndex];
+            if (self.animateBecauseWrong) {
+                self.manageErrors();
+            } else{
 
-                self.uncheckRadios();
-                self.hideMessages();
-                self.refs.btnAnimate.disabled = true;
-
-                if (self.currentMoment === 0) {
-                    self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                } else if (self.currentMoment === 1) {
-                    self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                } else if (self.currentMoment === 2) {
-                    self.rectangle = new self.MovingDisplay(["red", "hidden", "purple"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                } else if (self.currentMoment === 3) {
-                    self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                } else if (self.currentMoment === 4) {
-                    self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                    self.rectangle.squareList[1].finalPosition = self.rectangle.squareList[1].startPosition; // blue doesn't move
-                    if (self.mirroring){
-                        self.rectangle.squareList[0].finalPosition[0] = self.rectangle.squareList[0].finalPosition[0] + 30; // red moves less
-                    } else{
-                        self.rectangle.squareList[0].finalPosition[0] = self.rectangle.squareList[0].finalPosition[0] - 30; // red moves less
-                    }
-                    self.rectangle.squareList[0].duration = Math.abs(self.rectangle.squareList[0].finalPosition[0] - self.rectangle.squareList[0].startPosition[0]) / self.rectangle.speed; // make sure speed is the same
-                    self.rectangle.reset();
+                if (self.currentIndex !== 0) {
+                    delete self.rectangle;
                 }
-                self.update(); // this is needed to update display of radios and hide feedback
+                if (self.currentIndex === 5) {
+                    self.moveOn();
+                } else {
+                    self.currentMoment = self.possibleMoments[self.currentIndex];
+
+                    self.uncheckRadios();
+                    self.hideMessages();
+                    self.refs.btnAnimate.disabled = true;
+
+                    if (self.currentMoment === 0) {
+                        self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                    } else if (self.currentMoment === 1) {
+                        self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                    } else if (self.currentMoment === 2) {
+                        self.rectangle = new self.MovingDisplay(["red", "hidden", "purple"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                    } else if (self.currentMoment === 3) {
+                        self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                    } else if (self.currentMoment === 4) {
+                        self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                        if (self.mirroring) {
+                            self.rectangle.squareList[1].finalPosition[0] = self.rectangle.squareList[1].finalPosition[0] - 20;
+                        } else {
+                            self.rectangle.squareList[1].finalPosition[0] = self.rectangle.squareList[1].finalPosition[0] + 20;
+                        }
+                        self.rectangle.squareList[1].duration = Math.abs(self.rectangle.squareList[1].finalPosition[0] - self.rectangle.squareList[1].startPosition[0]) / self.rectangle.speed;
+                        self.rectangle.reset();
+                    }
+                    self.update(); // this is needed to update display of radios and hide feedback
+                }
             }
         };
 
@@ -528,8 +537,9 @@
                     self.animate();
                 } else {
                     self.hasErrors = false;
-                    self.feedbackText = "Not correct, sorry. Try again!";
+                    self.feedbackText = "Not correct, sorry. Press the button to watch again.";
                     self.uncheckRadios();
+                    self.manageErrors();
                     self.refs.btnAnimate.disabled = true;
                 }
             }
@@ -557,6 +567,7 @@
             self.hasErrors = false;
             self.feedbackTime = false;
         };
+
         self.moveOn = function () {
             self.lockNext = false;
             self.finish()
@@ -569,6 +580,19 @@
             }
             return errors;
         }
+
+        self.manageErrors = function () {
+            if (!self.animateBecauseWrong) {
+                self.animateBecauseWrong = true;
+                self.refs.radioCont.style.visibility = "hidden";
+            } else {
+                self.rectangle.reset();
+                self.animateBecauseWrong = false;
+                self.refs.radioCont.style.visibility = "visible";
+                self.hideMessages();
+                self.update()
+            }
+        };
 
     </script>
 

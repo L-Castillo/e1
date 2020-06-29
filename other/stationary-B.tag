@@ -1,4 +1,4 @@
-<test-trial>
+<stationary-B>
     <style>
         div#instructions{
             font-size: 22px;
@@ -45,17 +45,31 @@
             "redMoved":"",
             "blueMoved":"",
             "purpleMoved":"",
-            "animationEnded": "",
             "flashedAt":"",
             "numberSliderTouches":"",
         };
 
+        // set test according to condition
 
-        // test vars that can be changed
+        // +-----------+-----+-----------+----------+-----------+----------+
+        // |           |     |           Alternative Explanation           |
+        // |           |     |          Yes         |          No          |
+        // |           |     |---------------------------------------------|
+        // |           |     | Canonical | Reversed | Canonical | Reversed |
+        // | Mirroring | Yes | 0         | 1        | 2         | 3        |
+        // |           | No  | 4         | 5        | 6         | 7        |
+        // +-----------+-----+-----------+----------+-----------+----------+
+
+        self.condition = 7;
+        self.mirroring = (self.condition < 4);
+        self.launchTiming = (self.condition % 2 === 0) ? "canonical" : "reversed";
+        self.extraObjs = (self.condition % 4 < 2);
+        // other test vars that can be changed
         self.colours = ["red", "blue", "purple"];
         self.squareDimensions = [50, 50];
         self.speed = 0.3;
-        self.showFlash = true;
+        self.showFlash = false;
+
 
 
         // define what a moving display is - common to all .tags (see inner starting comments for minor changes according to tag needs)
@@ -209,7 +223,7 @@
                 display.animationEnded = Date.now();
             };
 
-            display.animate = function (startAt = 1000) {
+            display.animate = function () {
                 // stop timeouts
                 for (var i = 0; i < display.animationTimer.length; i++) {
                     clearTimeout(display.animationTimer[i])
@@ -219,7 +233,7 @@
                 display.reset();
                 display.draw();
                 // and this starts the timing
-                display.setTimeouts(startAt);
+                display.setTimeouts();
             };
             display.setTimeouts = function (startInstructions = 1000) {
                 // get list of when each sq finishes moving
@@ -235,11 +249,8 @@
                 display.animationTimer.push(timeoutId);
                 // timings for flash
                 if (display.showFlash) {
-                    var animationSpace = lastFinish + 1000; // add 1000s so one can set flash after lastFinish
-                    var flashTime =  startAt - 750 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 750ms before red starts moving (250ms after animation start).
-                    // 0 ----------------------- 250 --------------------- 1000 ---------------------------- lastFinish ---------------- lastFinish + 1000 -----> // time arrow (ms)
-                    //(animationStart) --- (earliestPossibleFlash) ------(startAt: red starts moving) -----(lastSquare stops moving) --(last possible Flash) --->
-
+                    var animationSpace = lastFinish + 1000; // add 1000s so one can set flash 500ms after lastFinish
+                    var flashTime =  startAt - 500 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 500ms before red starts moving.
                     timeoutId = setTimeout(display.displayFlash.bind(display), flashTime);
                     display.animationTimer.push(timeoutId);
                     timeoutId = setTimeout(display.displayFlash.bind(display), flashTime + 25); // this makes the flash 25ms long
@@ -372,7 +383,7 @@
 
             display.holeColour = "#d9d2a6";
             display.animationStarted = Infinity;
-            display.animationEnded = true;
+            display.animationEnded = false;
             display.flashState = false; // is the canvas flashing at the moment?
             display.animationTimer = []; // holds all the timeout ids so cancelling is easy
             display.durations = [];
@@ -380,24 +391,21 @@
             display.flashOnset = -1; // time when flash starts
 
             display.placeSquares();
+            display.squareList[1].finalPosition = display.squareList[1].startPosition;
             display.reset();
         };
 
         // overwrite funcs
         self.onInit = function () {
-            // get condition info + mirroring
-            self.mirroring = self.experiment.condition.factors.mirroring;
-            self.launchTiming = self.experiment.condition.factors.order;
-            self.extraObjs = (self.experiment.condition.factors.altExplanation === "present");
-
-
             // make rect
             self.rectangle = new self.MovingDisplay(self.colours, self.mirroring, self.launchTiming, self.extraObjs, self.squareDimensions, self.refs.myCanvas, self.refs.mySlider, self.speed, self.showFlash);
 
+            // if slider starting value is random use code below
+            // self.sliderValue = (Math.floor(Math.random() * 200) + 1);
+            // self.resultDict["sliderStartingPosition"] = self.sliderValue;
         };
 
         self.onShown = function () {
-
             self.rectangle.animate();
         };
 
@@ -420,14 +428,10 @@
             // at which red was instructed to move [not at which it actually moved])
             self.rectangle.flashOnset = self.rectangle.flashOnset - self.rectangle.animationStarted;
             // write in results dict
-            // time at which each square moved
             self.resultDict["redMoved"] = self.rectangle.squareList[0].movedAt;
             self.resultDict["blueMoved"] = self.rectangle.squareList[1].movedAt;
             self.resultDict["purpleMoved"] = self.rectangle.squareList[2].movedAt;
-            self.resultDict["animationEnded"] = self.rectangle.animationEnded - self.rectangle.animationStarted;
-            // time at which flash started
             self.resultDict["flashedAt"] = self.rectangle.flashOnset;
-            // number of times participant adjusted the slider
             self.resultDict["numberSliderTouches"] = self.sliderTouchedCounter;
             return self.resultDict;
         };
@@ -438,4 +442,4 @@
             self.rectangle.animate();
         }
     </script>
-</test-trial>
+</stationary-B>

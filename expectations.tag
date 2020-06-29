@@ -19,7 +19,7 @@
         <canvas width="950" height="400" style="border: solid black 2px" ref="myCanvas"></canvas>
     </div>
     <p style="font-size: 20px">Knowing that the Red square will be the first to move, write down in detail what you expect will happen: </p>
-    <textarea ref="textArea" style="width: 500px; height: 200px; margin: 0px 0px 0px 220px"></textarea>
+    <textarea ref="textArea" style="width: 500px; height: 200px; margin: 0 0 0 220px; font-size: 20px"></textarea>
 
     <p class="psychErrorMessage" show="{hasErrors}">{errorText}</p>
 
@@ -352,7 +352,7 @@
 
             display.holeColour = "#d9d2a6";
             display.animationStarted = Infinity;
-            display.animationEnded = false;
+            display.animationEnded = true;
             display.flashState = false; // is the canvas flashing at the moment?
             display.animationTimer = []; // holds all the timeout ids so cancelling is easy
             display.durations = [];

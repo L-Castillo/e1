@@ -11,16 +11,21 @@
         label {
             font-size: 20px;
         }
+        span.dot {
+            background-color: #d442422e;
+            width: 78px;
+            height: 46px;
+            border-radius: 50%;
+            display: inline-block;
+            visibility: hidden;
+            z-index: -1;
+            position: relative;
+            bottom: 25px;
+        }
     </style>
-    <animation-context name = "animator" animate-on-mount="true" animate-in=rubberBand" animate>
-        <div id = "instructions" ref="instructionText">
-            {instructions}
-        </div>
-    </animation-context>
 
-<!--    <div>-->
-<!--        <p>{instructions}</p>-->
-<!--    </div>-->
+    <div id = "instructions" ref="instructionText"> {instructions} </div>
+
     <div>
         <canvas width="950" height="400" style="border: solid black 2px" ref="myCanvas"></canvas>
         <div style="width: 950px">
@@ -28,8 +33,10 @@
             <label for="slider" style="float: right">Late</label>
         </div>
         <div class="slidecontainer" id="sliderCont">
-            <input id = "slider" onmouseup="{sliderMouseUp}" type="range" min="1" max="200" value="100" class="slider" style="width:950px" ref="mySlider">
+            <input id = "slider" onmouseup="{sliderMouseUp}" type="range" min="1" max="200" value="100" class="slider" style="width:950px; z-index: 0" ref="mySlider">
+            <span class="dot" ref="myPrompt"></span>
         </div>
+        <br>
         <p class="psychErrorMessage" show="{hasErrors}" >{errorText}</p>
     </div>
     <script>
@@ -107,8 +114,10 @@
                 sq.obedientDraw = function (canvas) {
                     // draws sq in its position, without asking questions! useful sometimes
                     var ctx = canvas.getContext("2d");
-                    ctx.fillStyle = sq.colour;
-                    ctx.fillRect(sq.position[0], sq.position[1], sq.dimensions[0], sq.dimensions[1]);
+                    if (sq.colourName  !== "hidden") {
+                        ctx.fillStyle = sq.colour;
+                        ctx.fillRect(sq.position[0], sq.position[1], sq.dimensions[0], sq.dimensions[1]);
+                    }
                 };
 
 
@@ -130,6 +139,7 @@
                 }
                 display.setUp();
             };
+
             display.setUp = function () {
                 var canvasMargin = display.canvas.width / 4;
 
@@ -170,6 +180,7 @@
                     display.squareList[1].moveAt = display.squareList[2].moveAt + display.squareList[2].duration;
                 }
             };
+
             display.reset = function () {
                 // reset squares to startPosition
                 for (var i = 0; i < 3; i++) {
@@ -181,11 +192,47 @@
                 display.animationEnded = false;
             };
 
+            display.getTrueLastFinish = function () {
+                // get list of when each sq finishes moving
+                var finishTimings = [];
+                for (var i = 0; i < 3; i++) {
+                    if (display.squareList[i].colourName !== "hidden") {
+                        finishTimings.push(display.squareList[i].moveAt + display.squareList[i].duration);
+                    }
+                }
+                 // and what time is last
+                return Math.max.apply(null, finishTimings);
+            };
+
+            display.setTimeouts = function (startInstructions = 1000) {
+                var finishTimings = display.squareList.map(function (obj) {
+                    return obj.moveAt + obj.duration
+                });
+                var lastFinish = Math.max.apply(null, finishTimings); // and what time is last
+                var startAt = startInstructions; // some external callings may want no delay when starting (e.g. check training tags). 1000ms lets page load up
+                var timeoutId;  //  start timeouts for start and end and add to a list (which allows to stop everything if animation restarted, see self.animate())
+                timeoutId = setTimeout(display.startAnimation.bind(display), startAt);
+                display.animationTimer.push(timeoutId);
+                timeoutId = setTimeout(display.endAnimation.bind(display), startAt + display.getTrueLastFinish()); // using getTrueLastFinish triggers endAnimation when Blue ends
+                display.animationTimer.push(timeoutId);
+                // timings for flash
+                if (display.showFlash) {
+                    var animationSpace = lastFinish + 1000; // add 1000s so one can set flash 500ms after lastFinish
+                    var flashTime =  startAt - 500 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 750ms before red starts moving (250ms after animation start).
+                    // 0 ----------------------- 250 --------------------- 1000 ---------------------------- lastFinish ---------------- lastFinish + 1000 -----> // time arrow (ms)
+                    //(animationStart) --- (earliestPossibleFlash) ------(startAt: red starts moving) -----(lastSquare stops moving) --(last possible Flash) --->
+                    timeoutId = setTimeout(display.displayFlash.bind(display), flashTime);
+                    display.animationTimer.push(timeoutId);
+                    timeoutId = setTimeout(display.displayFlash.bind(display), flashTime + 25); // this makes the flash 25ms long
+                    display.animationTimer.push(timeoutId);
+                }
+            };
 
             display.startAnimation = function () {
                 display.animationStarted = Date.now();
                 window.requestAnimationFrame(display.draw.bind(display));
             };
+
             display.endAnimation = function () {
                 display.animationEnded = Date.now();
             };
@@ -202,34 +249,12 @@
                 // and this starts the timing
                 display.setTimeouts(startAt);
             };
-            display.setTimeouts = function (startInstructions = 1000) {
-                // get list of when each sq finishes moving
-                var finishTimings = display.squareList.map(function (obj) {
-                    return obj.moveAt + obj.duration
-                });
-                var lastFinish = Math.max.apply(null, finishTimings); // and what time is last
-                var startAt = startInstructions; // some external callings may want no delay when starting (e.g. check training tags). 1000ms lets page load up
-                var timeoutId;  //  start timeouts for start and end and add to a list (which allows to stop everything if animation restarted, see self.animate())
-                timeoutId = setTimeout(display.startAnimation.bind(display), startAt);
-                display.animationTimer.push(timeoutId);
-                timeoutId = setTimeout(display.endAnimation.bind(display), startAt + lastFinish);
-                display.animationTimer.push(timeoutId);
-                // timings for flash
-                if (display.showFlash) {
-                    var animationSpace = lastFinish + 1000; // add 1000s so one can set flash 500ms after lastFinish
-                    var flashTime =  startAt - 500 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 750ms before red starts moving (250ms after animation start).
-                    // 0 ----------------------- 250 --------------------- 1000 ---------------------------- lastFinish ---------------- lastFinish + 1000 -----> // time arrow (ms)
-                    //(animationStart) --- (earliestPossibleFlash) ------(startAt: red starts moving) -----(lastSquare stops moving) --(last possible Flash) --->
-                    timeoutId = setTimeout(display.displayFlash.bind(display), flashTime);
-                    display.animationTimer.push(timeoutId);
-                    timeoutId = setTimeout(display.displayFlash.bind(display), flashTime + 25); // this makes the flash 25ms long
-                    display.animationTimer.push(timeoutId);
-                }
-            };
+
             display.draw = function () {
                 // empty canvas
                 var ctx = display.canvas.getContext("2d");
                 ctx.clearRect(0, 0, display.canvas.width, display.canvas.height);
+
                 // draw squares
                 var step = Date.now() - display.animationStarted;
                 for (var i = 0; i < display.squareList.length; i++) {
@@ -254,6 +279,7 @@
                     window.requestAnimationFrame(display.draw.bind(display));
                 }
             };
+
             display.drawExtraObjects = function () {
                 var ctx = display.canvas.getContext('2d');
                 // some vars to make more legible
@@ -309,6 +335,7 @@
                     ctx.stroke();
                 }
             };
+
             display.displayFlash = function () {
                 if (display.showFlash === true) {
                     if (display.flashState === false) {
@@ -351,8 +378,9 @@
             display.showFlash = showFlash;
 
             display.holeColour = "#d9d2a6";
+            display.pauseColour = "#408040";
             display.animationStarted = Infinity;
-            display.animationEnded = false;
+            display.animationEnded = true;
             display.flashState = false; // is the canvas flashing at the moment?
             display.animationTimer = []; // holds all the timeout ids so cancelling is easy
             display.durations = [];
@@ -376,24 +404,37 @@
         };
 
         self.canLeave = function () {
+            var PSS = self.rectangle.flashOnset - self.rectangle.animationStarted;
             self.resultDict["nextAttempts"]++;
             self.hasErrors = false;
             if(!self.rectangle.animationEnded || self.rectangle.flashOnset === -1) {  //  if animation hasn't ended or flash hasn't flashed
-                self.errorText = "Please wait until the animation ends before pressing Next";
+                if (self.rectangle.animationEnded && self.rectangle.flashOnset === -1) {
+                    self.errorText = "Please wait to see the flash before pressing Next";
+                } else if (!self.rectangle.animationEnded || self.rectangle.flashOnset === -1) {
+                    self.errorText = "Please wait until the animation ends before pressing Next";
+                }
                 self.hasErrors = true;
                 return false;
-            } else if ((self.currentMoment === 0 && self.refs.mySlider.value < 10) || (self.currentMoment === 1 && self.refs.mySlider.value > 190)) {
+            } else if ((self.currentMoment === 0 && self.refs.mySlider.value < 20) || (self.currentMoment === 1 && self.refs.mySlider.value > 180)) {
                 self.currentMoment++;
                 self.changeInstructions();
                 return false;
-            } else if (self.currentMoment === 2) {
+            } else if (self.currentMoment === 2 && (Math.abs(PSS) <  400)) {
                 return true;
             } else {
                 self.hasErrors = true;
                 if (self.currentMoment === 0) {
-                    self.errorText = "Try to move the slider more to the left so that the flash appears earlier";
+                    self.errorText = "Try to move the slider more to the left so that the flash appears earlier. Use the blinking circle to help you.";
+                    self.promptAnswer();
                 } else if (self.currentMoment === 1) {
-                    self.errorText = "Try to move the slider more to the right so that the flash appears later";
+                    self.errorText = "Try to move the slider more to the right so that the flash appears later. Notice that the new instructions want you to make the flash appear as late as possible.Use the blinking circle to help you.";
+                    self.promptAnswer();
+                } else if (self.currentMoment === 2) {
+                    if (PSS < -400) {
+                        self.errorText = "That's a bit too early. Try moving the slider more to the right so that the flash happens when the blue square starts moving";
+                    } else if (PSS > 400) {
+                        self.errorText = "That's a bit too late. Try moving the slider more to the left so that the flash happens when the blue square starts moving";
+                    }
                 }
             }
         };
@@ -412,23 +453,45 @@
 
         // page-specific funcs
         self.sliderMouseUp = function () {
+            self.hideErrors();
             self.rectangle.animate();
             self.resultDict["sliderTouches"][self.currentMoment]++
-        }
+        };
 
         self.changeInstructions = function () {
             if (self.currentMoment === 1) {
                 self.instructions = "Excellent! Now make it flash as late as possible, then press Next. ";
                 self.startTime = Date.now();
-                window.requestAnimationFrame(self.fadeToBlack.bind(self, 120, 100, 50));
+                window.requestAnimationFrame(self.fadeToBlack.bind(self, 60, 100, 50));
+                window.clearTimeout(self.promptID);
+                self.refs.myPrompt.style.visibility = "hidden";
+                self.refs.myPrompt.style.left = "872px";
             } else if (self.currentMoment === 2) {
+                window.clearTimeout(self.promptID);
+                self.refs.myPrompt.style.visibility = "hidden";
                 self.instructions = "Excellent! Now make it flash at the time when the blue square starts moving, then press Next (You can readjust the slider as many times as you need)";
                 self.startTime = Date.now();
-                window.requestAnimationFrame(self.fadeToBlack.bind(self, 120, 100, 50));
+                window.requestAnimationFrame(self.fadeToBlack.bind(self, 60, 100, 50));
             }
             self.rectangle.animate();
         };
-            // color animation instruction change
+
+        self.hideErrors = function () {
+            self.hasErrors = false;
+            self.update();
+        };
+
+        self.promptAnswer = function () {
+            if (self.refs.myPrompt.style.visibility === "hidden") {
+                self.refs.myPrompt.style.visibility = "visible";
+            } else {
+                self.refs.myPrompt.style.visibility = "hidden";
+            }
+            self.promptID = window.setTimeout(self.promptAnswer, 300);
+        };
+
+
+        // color animation instruction change
         self.ms = 600;
         self.brightnessChange = 50;
         self.brightnessPerStep = self.brightnessChange / self.ms;
@@ -441,9 +504,11 @@
 
             // self.update();
             if (endBri > 0) {
-                window.requestAnimationFrame(self.fadeToBlack.bind(self, 120, 100, 50));
+                window.requestAnimationFrame(self.fadeToBlack.bind(self, hue, sat, bri));
             }
                     };
+
+
 
 
     </script>

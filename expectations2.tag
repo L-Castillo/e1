@@ -1,4 +1,4 @@
-<test-trial>
+<expectations2>
     <style>
         div#instructions{
             font-size: 22px;
@@ -8,48 +8,75 @@
             font-size: 23px;
             text-align: center;
         }
+        p {
+            font-size: 22px;
+            margin: auto;
+            text-align: center;
+        }
+        td{
+            font-size: 20px;
+            font-weight: bold;
+        }
 
     </style>
     <div id = "instructions">
-        Please synchronize the flash with when the <b style="color: #0000FF">blue</b> square starts moving.
+        In the next screen you will watch an animation starting like this:
     </div>
     <br>
 
     <div>
         <canvas width="950" height="400" style="border: solid black 2px" ref="myCanvas"></canvas>
     </div>
+    <br>
+    <p>Knowing that the Red square will be the first to move, please place events in the order you think they will occur: </p>
+    <br>
+    <table ref="originalContainer" style= "width:750px; height: 100px; margin: auto; border: solid black 1px; table-layout: fixed">
+        <tr>
+            <td draggable="true" ondragstart="{drag.bind(event)}" ondragover="{allowDrop.bind(event)}" ondrop="{dropQuestion.bind(event)}" ondragleave="{returnWhite.bind(event)}" ondragend="{allWhite}">{events[0]}</td>
+            <td draggable="true" ondragstart="{drag.bind(event)}" ondragover="{allowDrop.bind(event)}" ondrop="{dropQuestion.bind(event)}" ondragleave="{returnWhite.bind(event)}" ondragend="{allWhite}">{events[1]}</td>
+            <td draggable="true" ondragstart="{drag.bind(event)}" ondragover="{allowDrop.bind(event)}" ondrop="{dropQuestion.bind(event)}" ondragleave="{returnWhite.bind(event)}" ondragend="{allWhite}">{events[2]}</td>
+        </tr>
+    </table>
+    <p> (Drag and drop each event to the rectangle below) </p>
+    <br>
+    <table ref="receivingContainer"  style= "width:300px; height: 200px; margin: auto; border: solid black 1px;">
+        <tr>
+            <td id ="answ1" draggable="{reportedOrder[0] !== undefined}" ondragstart="{drag.bind(event)}" ondragover="{allowDrop.bind(event)}" ondrop="{dropAnswer.bind(event)}" ondragleave="{returnWhite.bind(event)}" ondragend="{allWhite}">{reportedOrder[0] == undefined ? "" : "1. " + reportedOrder[0]}</td>
+        </tr>
+        <tr>
+            <td id ="answ2" draggable="{reportedOrder[1] !== undefined}" ondragstart="{drag.bind(event)}" ondragover="{allowDrop.bind(event)}" ondrop="{dropAnswer.bind(event)}" ondragleave="{returnWhite.bind(event)}" ondragend="{allWhite}">{reportedOrder[1] == undefined ? "" : "2. " + reportedOrder[1]}</td>
+        </tr>
+        <tr>
+            <td id ="answ3" draggable="{reportedOrder[2] !== undefined}" ondragstart="{drag.bind(event)}" ondragover="{allowDrop.bind(event)}" ondrop="{dropAnswer.bind(event)}" ondragleave="{returnWhite.bind(event)}" ondragend="{allWhite}">{reportedOrder[2] == undefined ? "" : "3. " + reportedOrder[2]}</td>
+        </tr>
 
-    <div style="width: 950px">
-        <label for="slider">Early</label>
-        <label for="slider" style="float: right">Late</label>
-    </div>
-    <div class="slidecontainer" id="slider">
-        <input onmouseup="{sliderMouseUp}" type="range" min="1" max="200"
-               value="{sliderValue}"
-               class="slider"
-               style="width:950px"
-               ref="mySlider"
-               id = "mySlider"
-               >
-    </div>
+
+    </table>
+    <p> You may reorder events, if you change your mind</p>
+    <p> You may also start again by pressing this button:</p>
+    <br>
+    <button class="psychButton" onclick="{restartDnD}" style="margin-left: 438px; color: red"> Restart</button>
+
+<!--    <textarea ref="textArea" style="width: 500px; height: 200px; margin: 0 0 0 220px; font-size: 20px"></textarea>-->
+
     <p class="psychErrorMessage" show="{hasErrors}">{errorText}</p>
 
-
-
     <script>
+        function shuffleArray(array){
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
         var self = this;
-        self.sliderValue = 0;   // change self.onInit() to make this random
-        self.sliderTouchedCounter = 0;
         self.hasErrors = false;
         self.resultDict = {
-            "redMoved":"",
-            "blueMoved":"",
-            "purpleMoved":"",
-            "animationEnded": "",
-            "flashedAt":"",
-            "numberSliderTouches":"",
+            "reportedOrder": ""
         };
-
+        self.events = ["The red square moves", "The blue square moves", "The pink square moves"];
+        self.reportedOrder = [];
+        shuffleArray(self.events);
 
         // test vars that can be changed
         self.colours = ["red", "blue", "purple"];
@@ -392,23 +419,15 @@
 
 
             // make rect
-            self.rectangle = new self.MovingDisplay(self.colours, self.mirroring, self.launchTiming, self.extraObjs, self.squareDimensions, self.refs.myCanvas, self.refs.mySlider, self.speed, self.showFlash);
+            self.rectangle = new self.MovingDisplay(self.colours, self.mirroring, self.launchTiming, self.extraObjs, self.squareDimensions, self.refs.myCanvas, null, self.speed, false);
 
         };
 
-        self.onShown = function () {
-
-            self.rectangle.animate();
-        };
 
         self.canLeave = function () {
             self.hasErrors = false;
-            if (self.sliderTouchedCounter === 0) {
-                self.errorText = "Please move the slider to synchronize the flash with when the blue square starts moving";
-                self.hasErrors = true;
-                return false;
-            } else if(!self.rectangle.animationEnded || self.rectangle.flashOnset === -1){  //  if animation hasn't ended or flash hasn't flashed
-                self.errorText = "Please wait until the animation ends";
+            if (self.reportedOrder.length < 3) {
+                self.errorText = "Please make sure you put all events in the lower box";
                 self.hasErrors = true;
             } else {
                 return true;
@@ -416,26 +435,92 @@
         };
 
         self.results = function () {
-            // make flashOnset relative to animation start (negative value means flash before the time
-            // at which red was instructed to move [not at which it actually moved])
-            self.rectangle.flashOnset = self.rectangle.flashOnset - self.rectangle.animationStarted;
-            // write in results dict
-            // time at which each square moved
-            self.resultDict["redMoved"] = self.rectangle.squareList[0].movedAt;
-            self.resultDict["blueMoved"] = self.rectangle.squareList[1].movedAt;
-            self.resultDict["purpleMoved"] = self.rectangle.squareList[2].movedAt;
-            self.resultDict["animationEnded"] = self.rectangle.animationEnded - self.rectangle.animationStarted;
-            // time at which flash started
-            self.resultDict["flashedAt"] = self.rectangle.flashOnset;
-            // number of times participant adjusted the slider
-            self.resultDict["numberSliderTouches"] = self.sliderTouchedCounter;
+            var orderCols = [];
+            for (var i = 0; i < self.reportedOrder.length; i++) {
+                orderCols.push(self.findColour(self.reportedOrder[i]));
+            }
+            self.resultDict["reportedOrder"] = orderCols;
             return self.resultDict;
         };
 
-        // page-specific funcs
-        self.sliderMouseUp = function () {
-            self.sliderTouchedCounter++;
-            self.rectangle.animate();
+        // page funcs
+        self.drag = function (ev) {
+            ev.dataTransfer.setData("text", (ev.target.innerText + ";" + ev.target.id));
+            ev.target.style.backgroundColor = "lightGray";
+        };
+
+        self.dropAnswer = function (ev) {
+            ev.preventDefault();
+            var data = ev.dataTransfer.getData("text");
+            var col = self.findColour(data);
+            var keyString = "The " + col + " square moves";
+            if (col !== "none" && self.reportedOrder.indexOf(keyString) === -1) {
+                self.reportedOrder.push(keyString);
+                self.events.splice(self.events.indexOf(keyString), 1);
+            } else if (col !== "none" && data.search("answ") !== -1) {
+                var newIndex = Number(ev.target.id[4]) - 1;
+                self.reportedOrder.splice(self.reportedOrder.indexOf(keyString), 1);
+                self.reportedOrder.splice(newIndex, 0, keyString);
+
+            }
+            console.log("dropAnswer: " + data);
+
+
+        };
+        self.dropQuestion = function (ev) {
+            ev.preventDefault();
+            var data = ev.dataTransfer.getData("text");
+            var col = self.findColour(data);
+            var keyString = "The " + col + " square moves";
+            if (col !== "none" && self.events.indexOf(keyString) === -1) {
+                self.events.push(keyString);
+                self.reportedOrder.splice(self.reportedOrder.indexOf(keyString), 1);
+            }
+            console.log("dropQ: " + data);
+
+        };
+
+        self.allowDrop = function (ev) {
+            ev.preventDefault();
+            ev.target.style.backgroundColor = "lightGray";
+        };
+
+        self.findColour = function (text) {
+            if (text.search("red") !== -1) {
+                return "red";
+            } else if (text.search("blue") !== -1) {
+                return "blue";
+            } else if (text.search("pink") !== -1) {
+                return "pink";
+            } else {
+                return "none";
+            }
+        };
+
+        self.restartDnD = function () {
+            self.events = ["The red square moves", "The blue square moves", "The pink square moves"];
+            shuffleArray(self.events);
+            self.reportedOrder = [];
+        }
+
+        self.returnWhite = function (ev) {
+            ev.target.style.backgroundColor = "white";
+        }
+
+        self.allWhite = function () {
+            console.log("allWhite: " + self.refs.originalContainer.rows);
+            for (var i = 0; i < self.refs.originalContainer.rows.length; i++) {
+                for (var index = 0; index < self.refs.originalContainer.rows[i].cells.length; index++) {
+                    self.refs.originalContainer.rows[i].cells[index].style.backgroundColor = "white";
+                }
+            }
+
+            for (var i = 0; i < self.refs.receivingContainer.rows.length; i++) {
+                for (var index = 0; index < self.refs.receivingContainer.rows[i].cells.length; index++) {
+                    self.refs.receivingContainer.rows[i].cells[index].style.backgroundColor = "white";
+                }
+            }
+
         }
     </script>
-</test-trial>
+</expectations2>
