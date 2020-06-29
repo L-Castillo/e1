@@ -402,17 +402,10 @@
 
         };
 
-        self.onShown = function () {
-        };
-
         self.canLeave = function () {
             return true;
         };
-
-        self.results = function () {
-
-        };
-
+        
         // page-specific funcs
         self.respondBtn = function (ev) {
             if (self.rectangle && self.rectangle.animationStarted !== Infinity && !self.rectangle.animationEnded) {
