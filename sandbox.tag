@@ -23,7 +23,8 @@
     <button class="psychButton" ref="animateBtn" onclick="{animate}"> Animate </button>
 
     <p class="psychErrorMessage" show="{hasErrors}">{errorText}</p>
-    <table style="width: 60%; height: 50px; margin: auto">
+    <p> Click on a button to add the object to the display. If you click an object that is already in the display, it will disappear instead. </p>
+    <table style="width: 60%; height: 50px; float:right">
         <tr>
             <th>Red</th>
             <th colspan="2">Blue and Pink</th>
