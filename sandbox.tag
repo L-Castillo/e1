@@ -406,7 +406,7 @@
         };
 
         self.canLeave = function () {
-
+            return true;
         };
 
         self.results = function () {
