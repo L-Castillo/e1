@@ -501,7 +501,7 @@
                 return (col !== "hidden");
             });
             if (sqBools[0] && objs[0]) {
-                if (objs[1] || (objs[0] && cols[2] && !cols[1])) {
+                if (objs[1] || (objs[0] && sqBools[2] && !sqBools[1])) {
                     self.rectangle.launchTiming = "reversed";
                     self.rectangle.setUp();
                 } else if (sqBools[1] && sqBools[2]) {
