@@ -415,6 +415,9 @@
 
         // page-specific funcs
         self.respondBtn = function (ev) {
+            if (self.rectangle && self.rectangle.animationStarted !== Infinity && !self.rectangle.animationEnded) {
+                return false
+            }
             if (ev.target.innerText.search("Red") !== -1) {
                 if (self.redState === ev.target.innerText) {
                     self.redState = "";
@@ -491,7 +494,7 @@
             var colours = [ASq, BSq, CSq];
             var objs = (stick || chain) ? [stick, chain] : false;
             self.rectangle = new self.MovingDisplay(colours, self.mirroring, "canonical", objs, self.squareDimensions, self.refs.myCanvas, null, self.speed, null);
-            self.update();
+            // self.update();
             // self.rectangle.draw();
             self.determineTimings(colours, objs)
         };
@@ -500,10 +503,12 @@
             var sqBools = cols.map(function (col) {
                 return (col !== "hidden");
             });
+            var t2 = self.rectangle.squareList[1].moveAt;
+            var t3 = self.rectangle.squareList[2].moveAt;
             if (sqBools[0] && objs[0]) {
                 if (objs[1] || (objs[0] && sqBools[2] && !sqBools[1])) {
-                    self.rectangle.launchTiming = "reversed";
-                    self.rectangle.setUp();
+                    self.rectangle.squareList[1].moveAt = t3;
+                    self.rectangle.squareList[2].moveAt = t2;
                 } else if (sqBools[1] && sqBools[2]) {
                     self.rectangle.squareList[2].moveAt = self.rectangle.squareList[1].moveAt;
                 }
@@ -517,8 +522,8 @@
                 }
             } else {
                 if (objs[1]) {
-                    self.rectangle.launchTiming = "reversed";
-                    self.rectangle.setUp();
+                    self.rectangle.squareList[1].moveAt = t3;
+                    self.rectangle.squareList[2].moveAt = t2;
                 }
             }
         };
