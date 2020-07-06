@@ -30,11 +30,10 @@
     <div style="width: 950px">
         <canvas width="950" height="400" style="border: solid black 2px" ref="myCanvas"></canvas> </div>
     <div>
-        <button class="psychButton" onclick="{manageMoments}" style="float:right;" ref="btnAnimate">Play animation</button> </div>
+        <button class="psychButton" onclick="{manageMoments}" style="float:right;" ref="btnAnimate">Check Answer</button> </div>
     <div style="width: 450px; margin: auto">
-        <p id = "question" ref="radioQuestions">{"In this animation, " + firstMovers[currentMoment] + " will start moving. What will happen next?"}</p>
-        <button class="psychButton" style="display: none;margin-left: 165px;"> Watch Again</button>
-        <div ref = "radioCont">
+        <form ref = "radioCont">
+            <p id = "question" ref="radioQuestions">{"In this animation, " + firstMovers[currentMoment] + " will start moving. What will happen next?"}</p>
             <input type="radio" id="radioA" name="1. What will happen next?" onclick="{enableActivateButton}" value="A" ref="radioA">
             <label for="radioA" id="labelradioA">{questions[currentMoment][0]}</label>
             <br>
@@ -44,11 +43,12 @@
             <input type="radio" id="radioC" name="1. What will happen next?" onclick="{enableActivateButton}" value="C" ref="radioC">
             <label for="radioC" id="labelradioC">{questions[currentMoment][2]}</label>
             <br>
-        </div>
-<!--        </p>-->
+        </form>
         <p class="psychErrorMessage" show="{hasErrors}">{errorText}</p>
 
         <p style="font-size: 23px; color: green" show="{feedbackTime}">{feedbackText}</p>
+        <button ref="errorWatchBtn" onclick="{watchAgain}" class="psychButton" style="display: none;margin-left: 165px;"> Watch Again</button>
+
 
     </div>
     <script>
@@ -62,20 +62,22 @@
         var self = this;
 
         // shuffle questions
-        self.possibleMoments = [0, 1, 2, 3, 4];
-        self.instructionText = "Please select an answer to the following questions, then press \"Play Animation\" to check your answer:";
+        self.possibleMoments = [0, 1, 2, 3, 4,];
+        self.errMoments = [];
+        self.timeStamps = [];
+        self.instructionText = "Please select an answer to the following questions, then press \"Check Answer\" to check your answer:";
         shuffleArray(self.possibleMoments);
         self.currentIndex = 0;
         self.currentMoment = self.possibleMoments[self.currentIndex];
 
-        self.firstMovers = ["Pink", "Red", "Red", "Blue", "Red"]; // changes question
+        self.firstMovers = ["Pink", "Red", "Red", "Blue", "the stick"]; // changes question
 
         // shuffle MCQ possible answers
         self.moment0Qs = ["Pink and Blue will move at the same time", "Pink will move but Blue will not", "Pink will move and then drag Blue"];
-        self.moment1Qs = ["Red will move and push Blue", "Red will move and Blue will not", "Red and Blue will move at the same time"];
+        self.moment1Qs = ["Red will move and displace Blue", "Red will move and Blue will not", "Red and Blue will move at the same time"];
         self.moment2Qs = ["Red will move and push Pink with the stick", "Red will move and Pink will not", "Red and Pink will move at the same time"];
         self.moment3Qs = ["Pink and Blue will move at the same time", "Blue will move but Pink will not", "Blue will move and push Pink"];
-        self.moment4Qs = ["Red will move and push Blue with the stick", "Red will move and the stick will go through Blue", "Red and Blue will move at the same time"];
+        self.moment4Qs = ["Red will move and push Blue with the stick", "Red will move and the stick go through Blue", "Red and Blue will move at the same time"];
         self.questionsStandardOrder = [self.moment0Qs, self.moment1Qs, self.moment2Qs, self.moment3Qs, self.moment4Qs];
         self.questions = [];
         for (var i = 0; i < self.questionsStandardOrder.length; i++) {
@@ -85,24 +87,23 @@
         }
 
         // define correct answers
-        self.answers = ["Pink will move and then drag Blue", "Red will move and push Blue", "Red will move and push Pink with the stick", "Blue will move and push Pink", "Red will move and the stick will go through Blue"];
+        self.answers = ["Pink will move and then drag Blue", "Red will move and displace Blue", "Red will move and push Pink with the stick", "Blue will move and push Pink", "Red will move and the stick go through Blue"];
 
         self.feedbackTime = false;
         self.lockNext = true;
-        self.pageResults = {0:[], 1:[], 2:[], 3:[], 4:[], "presentationOrder": self.possibleMoments, "totalErrors": 0};
+        self.pageResults = {0:[], 1:[], 2:[], 3:[], 4:[], "presentationOrder": "", "totalErrors": 0};
         self.errorText;
         self.feedbackText;
-        self.animateBecauseWrong = false;
+        self.hasToWatchAgain = false;
 
 
         self.MovingDisplay = function (colours, mirroring, launchTiming, extraObjs, squareDimensions, canvas, slider = null, speed, showFlash = false) {
             // What's different about this Moving Display?
-            // - finishing an animation leads to setUpNext (display.endAnimation)
-            // - display.endAnimation enables the Play Animation button (the button disables itself upon press)
-            // - animation ends 500ms later than usual to give time take in, as when animation ends the rectangle changes (lastFinish += 500 in display.setTimeouts)
-
+            // nothing
             var display = this;
+
             // def functions
+
             display.Square = function (colour, dimensions) {
                 var sq = this;
                 // colour
@@ -192,19 +193,20 @@
                 for (var i = 0; i < 3; i++) {
                     // start/end positions
                     var square = display.squareList[i];
+                    var sqWidth = display.squareDimensions[0];
                     var startPosition, endPosition;
                     if (i === 0) {
-                        startPosition = display.mirrored ? canvasMargin + 5 * display.squareDimensions[0] : canvasMargin;
-                        endPosition = display.mirrored ? startPosition - 2.5 * display.squareDimensions[0] : canvasMargin + 2.5 *
-                            display.squareDimensions[0];
+                        startPosition = display.mirrored ? canvasMargin + 5 * sqWidth : canvasMargin;
+                        endPosition = display.mirrored ? startPosition - 2.5 * sqWidth : canvasMargin + 2.5 *
+                            sqWidth;
                     } else {
-                        var distanceTravelled = display.squareDimensions[0] + 2 * display.squareDimensions[0] * (i - 1);
+                        var distanceTravelled = sqWidth + 2 * sqWidth * (i - 1);
                         startPosition = display.mirrored ?
-                            display.squareList[0].finalPosition[0] - distanceTravelled : // if mirrored travel left from A
-                            display.squareList[0].finalPosition[0] + distanceTravelled; // if not travel right
+                            display.squareList[0].finalPosition[0] - distanceTravelled - .5 * sqWidth: // if mirrored travel left from A
+                            display.squareList[0].finalPosition[0] + distanceTravelled + .5 * sqWidth; // if not travel right
                         endPosition = display.mirrored ?
-                            startPosition - display.squareDimensions[0] : // same idea
-                            startPosition + display.squareDimensions[0];
+                            startPosition - sqWidth : // same idea
+                            startPosition + sqWidth;
                     }
                     square.startPosition = [startPosition, 100];
                     square.finalPosition = [endPosition, 100];
@@ -240,14 +242,10 @@
 
             display.startAnimation = function () {
                 display.animationStarted = Date.now();
-
                 window.requestAnimationFrame(display.draw.bind(display));
             };
             display.endAnimation = function () {
                 display.animationEnded = Date.now();
-
-                self.refs.btnAnimate.disabled = false;
-                self.setUpNextQuestion();
             };
 
             display.animate = function (startAt = 1000) {
@@ -262,6 +260,19 @@
                 // and this starts the timing
                 display.setTimeouts(startAt);
             };
+
+            display.getLastFinish = function () {
+                // get list of when each sq finishes moving
+                var finishTimings = [];
+                for (var i = 0; i < 3; i++) {
+                    if (display.squareList[i].colourName !== "hidden") {
+                        finishTimings.push((display.squareList[i].moveAt + display.squareList[i].duration));
+                    }
+                };
+                // and what time is last
+                return Math.max.apply(null, finishTimings);
+            };
+
             display.setTimeouts = function (startInstructions = 1000) {
                 // get list of when each sq finishes moving
                 var finishTimings = display.squareList.map(function (obj) {
@@ -272,14 +283,15 @@
                 var timeoutId;  //  start timeouts for start and end and add to a list (which allows to stop everything if animation restarted, see self.animate())
                 timeoutId = setTimeout(display.startAnimation.bind(display), startAt);
                 display.animationTimer.push(timeoutId);
-                timeoutId = setTimeout(display.endAnimation.bind(display), startAt + lastFinish + 500); // +500ms than usual, see initial comments
+                timeoutId = setTimeout(display.endAnimation.bind(display), startAt + lastFinish);
                 display.animationTimer.push(timeoutId);
                 // timings for flash
                 if (display.showFlash) {
-                    var animationSpace = lastFinish + 1000; // add 1000s so one can set flash 500ms after lastFinish
+                    var animationSpace = lastFinish + 1000; // add 1000s so one can set flash after lastFinish
                     var flashTime =  startAt - 750 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 750ms before red starts moving (250ms after animation start).
                     // 0 ----------------------- 250 --------------------- 1000 ---------------------------- lastFinish ---------------- lastFinish + 1000 -----> // time arrow (ms)
                     //(animationStart) --- (earliestPossibleFlash) ------(startAt: red starts moving) -----(lastSquare stops moving) --(last possible Flash) --->
+
                     timeoutId = setTimeout(display.displayFlash.bind(display), flashTime);
                     display.animationTimer.push(timeoutId);
                     timeoutId = setTimeout(display.displayFlash.bind(display), flashTime + 25); // this makes the flash 25ms long
@@ -290,7 +302,6 @@
                 // empty canvas
                 var ctx = display.canvas.getContext("2d");
                 ctx.clearRect(0, 0, display.canvas.width, display.canvas.height);
-
                 // draw squares
                 var step = Date.now() - display.animationStarted;
                 for (var i = 0; i < display.squareList.length; i++) {
@@ -312,10 +323,7 @@
                     display.drawExtraObjects()
                 }
                 if (!display.animationEnded) {
-                    display.drawPlay();
                     window.requestAnimationFrame(display.draw.bind(display));
-                } else {
-                    display.drawPause();
                 }
             };
             display.drawExtraObjects = function () {
@@ -327,7 +335,7 @@
 
                 // stick
                 if (display.squareList[0].colourName !== "hidden") {
-                    var stickSize = squareA.dimensions[0] * 2;
+                    var stickSize = squareA.dimensions[0] * 2.5;
 
                     var startX, endX;
                     if (display.mirrored) {
@@ -352,11 +360,11 @@
 
                 // draw chain
                 if (display.squareList[1].colourName !== "hidden" && display.squareList[2].colourName !== "hidden") {
-                    var squareBMiddleX, squareBY, squareCMiddleX, squareBY;
+                    var squareBMiddleX, squareBY, squareCMiddleX, squareCY;
                     squareBMiddleX = squareB.position[0] + squareB.dimensions[0] * 1 / 2;
                     squareCMiddleX = squareC.position[0] + squareC.dimensions[0] * 1 / 2;
                     squareBY = squareB.position[1] + squareB.dimensions[1] * 9 / 10;
-                    squareBY = squareC.position[1] + squareC.dimensions[1] * 9 / 10;
+                    squareCY = squareC.position[1] + squareC.dimensions[1] * 9 / 10;
 
                     var distanceBetweenSquares, squareMiddlePoint;
                     distanceBetweenSquares = Math.abs(squareBMiddleX - squareCMiddleX);
@@ -369,8 +377,56 @@
                     // chain is Q bezier curve defined by points (squareBMiddleX, squareBY), (squareMiddlePoint, controlPointY) and (squareCMiddleX, squareBY)
                     ctx.beginPath();
                     ctx.moveTo(squareBMiddleX, squareBY);
-                    ctx.quadraticCurveTo(squareMiddlePoint, controlPointY, squareCMiddleX, squareBY);
+                    ctx.quadraticCurveTo(squareMiddlePoint, controlPointY, squareCMiddleX, squareCY);
                     ctx.stroke();
+                }
+
+                // wall
+                if (display.drawWall) {
+                    var wallX;
+                    var wallY = display.squareList[2].startPosition[1] - display.squareDimensions[1];
+                    var wallWidth = 1 * display.squareDimensions[1];
+                    var wallHeight = 3 * display.squareDimensions[1];
+                    if (self.mirroring) {
+                        wallX = display.squareList[2].startPosition[0] + display.squareDimensions[0] - wallWidth - 1;
+                    } else {
+                        wallX = display.squareList[2].startPosition[0] + 1;
+                    }
+
+                    // ctx.beginPath();
+                    // ctx.rect(wallX, wallY, wallWidth, wallHeight);
+                    // ctx.stroke();
+                    ctx.fillStyle = "#c87630";
+                    ctx.fillRect(wallX, wallY, wallWidth, wallHeight);
+                    // bricks
+                    var brickWidth = wallWidth / 3;
+                    var brickHeight = wallHeight / 10;
+                    for (var r = 0; r < 10; r++) {
+                        if (r !== 0) {
+                            // hor lines
+                            ctx.beginPath();
+                            ctx.moveTo(wallX, wallY + r * brickHeight);
+                            ctx.lineTo(wallX + wallWidth, wallY + r * brickHeight);
+                            ctx.stroke();
+                        }
+                        if (r % 2 === 0) {
+                            for (var c = 0; c < 3; c++) {
+                                if (c !== 0) {
+                                    ctx.beginPath();
+                                    ctx.moveTo(wallX + c * brickWidth, wallY + r * brickHeight);
+                                    ctx.lineTo(wallX + c * brickWidth, wallY + (r + 1) * brickHeight);
+                                    ctx.stroke();
+                                }
+                            }
+                        } else {
+                            for (var c = 0; c < 3; c++) {
+                                ctx.beginPath();
+                                ctx.moveTo(wallX + (c + .5) * brickWidth, wallY + r * brickHeight);
+                                ctx.lineTo(wallX + (c + .5) * brickWidth, wallY + (r + 1) * brickHeight);
+                                ctx.stroke();
+                            }
+                        }
+                    }
                 }
             };
             display.displayFlash = function () {
@@ -416,7 +472,8 @@
 
             display.holeColour = "#d9d2a6";
             display.animationStarted = Infinity;
-            display.animationEnded = false;
+            display.drawWall = false;
+            display.animationEnded = true;
             display.flashState = false; // is the canvas flashing at the moment?
             display.animationTimer = []; // holds all the timeout ids so cancelling is easy
             display.durations = [];
@@ -430,10 +487,13 @@
         // override functions
         self.canLeave = function () {
             if (self.lockNext) {
+                if (self.hasToWatchAgain) {
+                    return false;
+                }
                 if (!self.anyRadiosClicked()) {
                     self.errorText = "Please answer all the questions before proceeding";
-                } else {
-                    self.errorText = "Please press Play Animation before proceeding";
+                } else if(self.rectangle.animationStarted === Infinity) {
+                    self.errorText = "Please press Check Answer before proceeding";
                 }
                 self.hasErrors = true;
                 return false;
@@ -447,10 +507,33 @@
             self.mirroring = self.experiment.condition.factors.mirroring;
             self.radios = [self.refs.radioA, self.refs.radioB, self.refs.radioC];
             self.refs.btnAnimate.disabled = true;
+            // self.setUpNextQuestion();
+        };
+
+        self.onShown = function () {
             self.setUpNextQuestion();
+
+
         };
 
         self.results = function () {
+            var timeInOrderOfPresentation = [];
+            var timeInMomentOrder = new Array(5).fill(0);
+            // get time spent in each Stage by subtracting timestamps, fill timeSpentinOrder with 0s
+            for (var i = 0; i < self.timeStamps.length; i++) {
+                if (i > 0) {
+                    var timeSpent = self.timeStamps[i] - self.timeStamps[i - 1];
+                    timeInOrderOfPresentation.push(timeSpent);
+                }
+            }
+                // arrange the times in order of moments (time spent in moment 0, time spent in 1, etc) irrespectively of when shown.
+            for (var i = 0; i < self.possibleMoments.length; i++) {
+                timeInMomentOrder[self.possibleMoments[i]] += timeInOrderOfPresentation[i];
+            }
+
+            self.pageResults["presentationOrder"] = self.possibleMoments;
+            self.pageResults["timeInOrderOfPresentation"] = timeInOrderOfPresentation;
+            self.pageResults["timeInMomentOrder"] = timeInMomentOrder;
             return self.pageResults;
             // 0 - 4: what participants answered in each of these moments. e.g. if 0: 23 -> participant chose answer in self.moment0Qs with index 2
             // and that was wrong so they then chose answer with index 3. Last item is correct item by definition
@@ -471,43 +554,44 @@
             self.hideMessages();
 
         };
-        self.setUpNextQuestion = function () {
-            if (self.animateBecauseWrong) {
-                self.manageErrors();
-            } else{
 
-                if (self.currentIndex !== 0) {
-                    delete self.rectangle;
-                }
-                if (self.currentIndex === 5) {
+        self.setUpNextQuestion = function () {
+            self.timeStamps.push(Date.now());
+            if (self.currentIndex !== 0) {
+                delete self.rectangle;
+            }
+            if (self.currentIndex === self.possibleMoments.length) {
+                if (self.errMoments.length === 0) {
                     self.moveOn();
                 } else {
-                    self.currentMoment = self.possibleMoments[self.currentIndex];
-
-                    self.uncheckRadios();
-                    self.hideMessages();
-                    self.refs.btnAnimate.disabled = true;
-
-                    if (self.currentMoment === 0) {
-                        self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                    } else if (self.currentMoment === 1) {
-                        self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                    } else if (self.currentMoment === 2) {
-                        self.rectangle = new self.MovingDisplay(["red", "hidden", "purple"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                    } else if (self.currentMoment === 3) {
-                        self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                    } else if (self.currentMoment === 4) {
-                        self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                        if (self.mirroring) {
-                            self.rectangle.squareList[1].finalPosition[0] = self.rectangle.squareList[1].finalPosition[0] - 20;
-                        } else {
-                            self.rectangle.squareList[1].finalPosition[0] = self.rectangle.squareList[1].finalPosition[0] + 20;
-                        }
-                        self.rectangle.squareList[1].duration = Math.abs(self.rectangle.squareList[1].finalPosition[0] - self.rectangle.squareList[1].startPosition[0]) / self.rectangle.speed;
-                        self.rectangle.reset();
-                    }
-                    self.update(); // this is needed to update display of radios and hide feedback
+                    shuffleArray(self.errMoments);
+                    self.possibleMoments = self.possibleMoments.concat(self.errMoments);
+                    self.errMoments = [];
+                    self.timeStamps.pop();
+                    self.setUpNextQuestion();
                 }
+            } else {
+                self.currentMoment = self.possibleMoments[self.currentIndex];
+
+                self.uncheckRadios();
+                self.hideMessages();
+                self.refs.btnAnimate.disabled = true;
+
+                if (self.currentMoment === 0) {
+                    self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                } else if (self.currentMoment === 1) {
+                    self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                } else if (self.currentMoment === 2) {
+                    self.rectangle = new self.MovingDisplay(["red", "hidden", "purple"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                } else if (self.currentMoment === 3) {
+                    self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                } else if (self.currentMoment === 4) {
+                    self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                    self.rectangle.squareList[1].finalPosition = self.rectangle.squareList[1].startPosition;
+                    self.rectangle.drawWall = true;
+                    self.rectangle.draw();
+                }
+                self.update(); // this is needed to update display of radios and hide feedback
             }
         };
 
@@ -535,12 +619,19 @@
                     self.feedbackText = "Well done!";
                     self.currentIndex++;
                     self.animate();
+                    window.setTimeout(self.setUpNextQuestion, 1250);
+                    window.setTimeout(self.enableActivateButton, 1250);
                 } else {
                     self.hasErrors = false;
-                    self.feedbackText = "Not correct, sorry. Press the button to watch again.";
+                    self.feedbackText = 'Not correct, sorry. Press the "Watch again" button to watch again. This will help you answer correctly next time.';
+                    self.hasToWatchAgain = true;
                     self.uncheckRadios();
-                    self.manageErrors();
+                    self.refs.radioCont.style.display = "none";
+                    self.refs.errorWatchBtn.style.display = "inline";
                     self.refs.btnAnimate.disabled = true;
+                    if (!self.errMoments.includes(self.currentMoment)) {
+                        self.errMoments.push(self.currentMoment);
+                    }
                 }
             }
         };
@@ -557,7 +648,7 @@
             if (!what) {
                 return somethingClicked
             } else {
-                returnList = [somethingClicked, whatChecked];
+                var returnList = [somethingClicked, whatChecked];
                 return returnList;
 
             }
@@ -570,7 +661,7 @@
 
         self.moveOn = function () {
             self.lockNext = false;
-            self.finish()
+            self.finish();
         };
 
         self.getTotalErrors = function () {
@@ -579,20 +670,23 @@
                 errors += self.pageResults[i].length - 1
             }
             return errors;
-        }
-
-        self.manageErrors = function () {
-            if (!self.animateBecauseWrong) {
-                self.animateBecauseWrong = true;
-                self.refs.radioCont.style.visibility = "hidden";
-            } else {
-                self.rectangle.reset();
-                self.animateBecauseWrong = false;
-                self.refs.radioCont.style.visibility = "visible";
-                self.hideMessages();
-                self.update()
-            }
         };
+
+        self.watchAgain = function () {
+            self.rectangle.animate(0);
+            self.refs.errorWatchBtn.style.display = "none";
+            window.setTimeout(self.setUpRetry, self.rectangle.getLastFinish() + 500);
+        };
+
+        self.setUpRetry = function () {
+            self.feedbackText = "You can try again now.";
+            self.hasToWatchAgain = false;
+            self.refs.radioCont.style.display = "inline";
+            self.rectangle.reset();
+            self.rectangle.draw();
+            self.update();
+        };
+
 
     </script>
 
