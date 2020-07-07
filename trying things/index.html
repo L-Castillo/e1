@@ -13,8 +13,17 @@
             style="display: none;" width="960"
             block-by-ip="{true}" title="Experiment"
             whitelist-ips="{['']}"
-            factors="{{altExplanation:['present', 'absent'], order: ['canonical','reversed'], mirroring: [Math.floor(Math.random() * 2) === 0]}}"
+            factors="{{altExplanation:['present', 'absent'], order: ['canonical'], mirroring: [Math.floor(Math.random() * 2) === 0]}}"
 >
+<!--    TEST TAGS -->
+	<slider-practice></slider-practice>
+    
+    <test-trial></test-trial>
+    <training-movement-testingStuff></training-movement-testingStuff>
+    <sandbox></sandbox>
+    <training-movement></training-movement>
+    <checking-training2></checking-training2>
+    <expectations2></expectations2>
 
 
 
@@ -35,43 +44,40 @@
         If you believe you will be affected please leave the experiment now.
     </instructions>
 
-    <!--    TEST TAGS -->
-    <expectations></expectations>
-    <training-movement></training-movement>
-    <checking-training></checking-training>
-    <slider-practice></slider-practice>
-    <test-trial></test-trial>
-
-
     <gdpr institution="UCL" principal="Lucas Castillo" email="lucas.castillo.19@ucl.ac.uk" ethics="EP/2017/005" controller="data-protection@ucl.ac.uk"></gdpr>
 
     <consent></consent>
 
      <instructions process="{true}">
-         In the following screen, you will watch some animations in order to learn how different squares interact. Please watch carefully.
+         In the following screen, you will watch some animations in order to learn how different objects interact. Please watch carefully.
 
          Afterwards, you will be asked to predict how an animation will end.
      </instructions>
 
     <training-movement></training-movement>
 
-    <checking-training></checking-training>
+    <checking-training2></checking-training2>
 
     <instructions process="{true}">
-        In the next few trials, the screen will flash and we will ask you to synchronize the time of the flashing with the motion of one of the squares.
-        To do so, you will use a slider to change when the flash appears, moving it left to make it appear earlier and moving it right to make it appear later.
+        In the next few trials, the screen will flash and we will ask you to change the time at which the flashing appears.
+        To do so, you will use a slider, moving it left to make it appear earlier and moving it right to make it appear later.
         In the next screen you can see how that works.
     </instructions>
 
     <slider-practice></slider-practice>
 
-    <instructions>
-        This is the end of the instructions. Next you will see an animation involving different squares. First you will be asked to tell us your expectations.
-        Then you will be asked to synchronize the flash on the screen with the time when the blue square starts moving.
-        As you saw before, you can change the moment the flash appears on screen by moving the slider.
+    <instructions process = "{true}">
+        This is the end of the instructions.
+
+        Next you will see an animation involving different objects and will be asked the order when you expect they will start moving.
     </instructions>
 
-    <expectations></expectations>
+    <expectations2></expectations2>
+
+    <instructions>
+        Next you will be asked to synchronize the flash on the screen with the time when the blue square starts moving.
+        As you learned before, you can change the moment the flash appears on screen by moving the slider.
+    </instructions>
 
     <test-trial></test-trial>
 

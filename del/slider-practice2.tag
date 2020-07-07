@@ -1,4 +1,4 @@
-<expectations>
+<slider-practice2>
     <style>
         div#instructions{
             font-size: 22px;
@@ -10,66 +10,47 @@
         }
         label {
             font-size: 20px;
-            padding-bottom: 5px;
-            margin: 5px;
+        }
+        span.dot {
+            background-color: #d442422e;
+            width: 78px;
+            height: 46px;
+            border-radius: 50%;
+            display: inline-block;
+            visibility: hidden;
+            z-index: -1;
+            position: relative;
+            bottom: 25px;
         }
 
     </style>
-    <div id = "instructions">
-        In the next screen you will watch an animation starting like this:
-    </div>
-    <br>
 
+    <div id = "instructions" ref="instructionText"> {instructions} </div>
     <div>
         <canvas width="950" height="400" style="border: solid black 2px" ref="myCanvas"></canvas>
+        <div style="width: 950px">
+            <label for="slider">Early</label>
+            <label for="slider" style="float: right">Late</label>
+        </div>
+        <div class="slidecontainer" id="sliderCont">
+            <input id = "slider" onmouseup="{sliderMouseUp}" type="range" min="1" max="200" value="100" class="slider" style="width:950px" ref="mySlider">
+            <span class="dot" ref="myPrompt"></span>
+
+        </div>
+        <p class="psychErrorMessage" show="{hasErrors}" >{errorText}</p>
     </div>
-    <div style="width: 800px; margin: auto">
-        <form>
-            <p style="font-size: 20px">Knowing that the Red square will be the first to move, choose what you expect will happen: </p>
-            <input type="radio" name="expect" id="radioA" value="A" ref="radioA">
-            <label for="radioA" id="labelradioA">{questions[0]}</label>
-            <br>
-            <input type="radio" name="expect" id="radioB" value="B" ref="radioB">
-            <label for="radioB" id="labelradioB">{questions[1]}</label>
-            <br>
-            <input type="radio" name="expect" id="radioC" value="C" ref="radioC">
-            <label for="radioC" id="labelradioC">{questions[2]}</label>
-            <br>
-        </form>
-    </div>
-
-
-    <p class="psychErrorMessage" show="{hasErrors}">{errorText}</p>
-
     <script>
         var self = this;
-        function shuffleArray(array){
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-
-        self.hasErrors = false;
-        self.resultDict = {
-            "expectation": "",
-            "verdict": "",
-        };
-
-
-        // test vars that can be changed
-        self.colours = ["red", "blue", "purple"];
-        self.squareDimensions = [50, 50];
-        self.speed = 0.3;
-        self.showFlash = true;
-        self.answers = ["Red will move, then Blue will move, then Pink will move", "Red will move, then Pink will move, then Blue will move", "Red will move, then Blue and Pink will move at the same time"];
-        self.questions = self.answers.slice();
-        shuffleArray(self.questions);
-
+        self.instructions = "Try making the screen flash as early as possible and press Next";
+        self.errorText = "Try to move the slider more to the left so that the flash appears earlier";
+        self.currentMoment = 0;
+        self.resultDict = {"sliderTouches": [0,0,0], "nextAttempts": 0}; // nextAttempts = 3 for a perfect participant
         // define what a moving display is - common to all .tags (see inner starting comments for minor changes according to tag needs)
         self.MovingDisplay = function (colours, mirroring, launchTiming, extraObjs, squareDimensions, canvas, slider = null, speed, showFlash = false) {
             // What's different about this Moving Display?
-            // nothing
+            // in setTimeouts flashTime =  startAt - 500 + ... (instead of startAt - 750). This, in conjunction with self.rectangle.squareList[1].moveAt = 0 in self.onInit()
+            // makes the slider Answer here completely different to test trial (flashTime change means flash is 250ms later than in test trial, and moveAt change means bluesquare is 200ms earlier than in a canonical
+
             var display = this;
 
             // def functions
@@ -253,12 +234,12 @@
                 var timeoutId;  //  start timeouts for start and end and add to a list (which allows to stop everything if animation restarted, see self.animate())
                 timeoutId = setTimeout(display.startAnimation.bind(display), startAt);
                 display.animationTimer.push(timeoutId);
-                timeoutId = setTimeout(display.endAnimation.bind(display), startAt + lastFinish);
+                timeoutId = setTimeout(display.endAnimation.bind(display), startAt + display.getLastFinish()); // using getLastFinish triggers endAnimation when Blue ends
                 display.animationTimer.push(timeoutId);
                 // timings for flash
                 if (display.showFlash) {
-                    var animationSpace = lastFinish + 1000; // add 1000s so one can set flash after lastFinish
-                    var flashTime =  startAt - 750 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 750ms before red starts moving (250ms after animation start).
+                    var animationSpace = lastFinish + 1000; // add 1000s so one can set flash 500ms after lastFinish
+                    var flashTime =  startAt - 500 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 750ms before red starts moving (250ms after animation start).
                     // 0 ----------------------- 250 --------------------- 1000 ---------------------------- lastFinish ---------------- lastFinish + 1000 -----> // time arrow (ms)
                     //(animationStart) --- (earliestPossibleFlash) ------(startAt: red starts moving) -----(lastSquare stops moving) --(last possible Flash) --->
 
@@ -454,75 +435,116 @@
             display.reset();
         };
 
+
         // overwrite funcs
         self.onInit = function () {
-            // get condition info + mirroring
             self.mirroring = self.experiment.condition.factors.mirroring;
-            self.launchTiming = self.experiment.condition.factors.order;
-            self.extraObjs = (self.experiment.condition.factors.altExplanation === "present");
-            self.radios = [self.refs.radioA, self.refs.radioB, self.refs.radioC];
-            if (self.extraObjs) {
-                self.answers = ["Red will move and push Pink with the stick, then Pink will move and drag Blue", "Red will move and push Blue, then Blue will move and push Pink", "Red will move push Pink with the stick, then Blue and Pink will move at the same time"];
-            } else {
-                self.answers = ["Red will move and displace Blue, then Blue will move and push Pink", "Red will move and touch Blue, which will make Pink move and after Pink stops moving Blue will move", "Red will move and touch Blue, and then Blue and Pink will move at the same time"];
-            }
-            self.questions = self.answers.slice();
-            shuffleArray(self.questions);
+            self.rectangle = new self.MovingDisplay(["red", "blue", "purple"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, self.refs.mySlider, 0.3, true);
+            self.rectangle.squareList[1].moveAt = 0;
+            self.rectangle.squareList[1].finalPosition[0] = self.mirroring ? self.rectangle.squareList[1].finalPosition[0] - self.rectangle.squareDimensions[0] : self.rectangle.squareList[1].finalPosition[0] + self.rectangle.squareDimensions[0];
+            self.rectangle.squareList[1].duration = Math.abs(self.rectangle.squareList[1].finalPosition[0] - self.rectangle.squareList[1].startPosition[0]) / self.rectangle.speed;
+
+            self.rectangle.squareList[0].startPosition = [self.rectangle.squareList[1].startPosition[0], self.rectangle.squareList[1].startPosition[1] + 2 * self.rectangle.squareDimensions[1]];
+            self.rectangle.squareList[0].finalPosition = self.rectangle.squareList[0].startPosition;
+            self.rectangle.squareList[2].startPosition = [self.rectangle.squareList[1].startPosition[0], self.rectangle.squareList[1].startPosition[1] + 4 * self.rectangle.squareDimensions[1]];
+            self.rectangle.squareList[2].finalPosition = self.rectangle.squareList[2].startPosition;
 
 
 
-            // make rect
-            self.rectangle = new self.MovingDisplay(self.colours, self.mirroring, self.launchTiming, self.extraObjs, self.squareDimensions, self.refs.myCanvas, null, self.speed, false);
-
+            self.rectangle.reset();
+        };
+        self.onShown = function () {
+            self.rectangle.animate();
         };
 
-
         self.canLeave = function () {
+            var PSS = self.rectangle.flashOnset - self.rectangle.animationStarted;
+            self.resultDict["nextAttempts"]++;
             self.hasErrors = false;
-            if (!self.anyRadiosClicked()) {
-                self.errorText = "Please choose one of the options";
+            if(!self.rectangle.animationEnded || self.rectangle.flashOnset === -1) {  //  if animation hasn't ended or flash hasn't flashed
+                self.errorText = "Please wait until the animation ends before pressing Next";
                 self.hasErrors = true;
                 return false;
-            } else {
+            } else if ((self.currentMoment === 0 && self.refs.mySlider.value < 20) || (self.currentMoment === 1 && self.refs.mySlider.value > 180)) {
+                self.currentMoment++;
+                self.changeInstructions();
+                return false;
+            } else if (self.currentMoment === 2 && (Math.abs(PSS) <  400)) {
                 return true;
+            } else {
+                self.hasErrors = true;
+                if (self.currentMoment === 0) {
+                    self.errorText = "Try to move the slider more to the left so that the flash appears earlier";
+                } else if (self.currentMoment === 1) {
+                    self.errorText = "Try to move the slider more to the right so that the flash appears later. Notice that the new instructions want you to make the flash appear as late as possible.";
+                } else if (self.currentMoment === 2) {
+                    if (PSS < -400) {
+                        self.errorText = "That's a bit too early. Try moving the slider more to the right so that the flash happens when the blue square starts moving";
+                    } else if (PSS > 400) {
+                        self.errorText = "That's a bit too late. Try moving the slider more to the left so that the flash happens when the blue square starts moving";
+                    }
+                }
             }
         };
 
         self.results = function () {
-            var answers = self.anyRadiosClicked(true);
-            var answer = self.questions[answers[1]];
-            var verdict;
-            if (answer === self.answers[2]) {
-                verdict = "nonsensical";
-            } else if (answer === self.answers[0]) {
-                verdict = "congruent";
-            } else {
-                verdict = "incongruent"
-            }
-            self.resultDict["expectation"] = self.questions[answers[1]];
-            self.resultDict["verdict"] = verdict;
+            // get flashTime
+            self.rectangle.flashOnset = self.rectangle.flashOnset - self.rectangle.animationStarted;
+            // write in results dict
+            // crucial times
+            self.resultDict["blueMoved"] = self.rectangle.squareList[1].movedAt;
+            self.resultDict["flashedAt"] = self.rectangle.flashOnset;
             return self.resultDict;
+            // slider touches = 2,1 -> participant touched slider twice when asked to sync early and once when asked late
+            // nextAttempts = 2 -> participant pressed "Next" twice more than absolutely necessary (value starts at -2)
         };
 
-        // own funcs
-
-        self.anyRadiosClicked = function (what=false) {
-            var somethingClicked = false;
-            var whatChecked;
-            for (var i = 0; i < self.radios.length; i++) {
-                if (self.radios[i].checked) {
-                    somethingClicked = true;
-                    whatChecked = i
-                }
-            }
-            if (!what) {
-                return somethingClicked
-            } else {
-                var returnList = [somethingClicked, whatChecked];
-                return returnList;
-
-            }
+        // page-specific funcs
+        self.sliderMouseUp = function () {
+            self.hideErrors();
+            self.rectangle.animate();
+            self.resultDict["sliderTouches"][self.currentMoment]++
         };
+
+        self.changeInstructions = function () {
+            if (self.currentMoment === 1) {
+                self.instructions = "Excellent! Now make it flash as late as possible, then press Next. ";
+                self.startTime = Date.now();
+                window.requestAnimationFrame(self.fadeToBlack.bind(self, 60, 100, 50));
+            } else if (self.currentMoment === 2) {
+                self.instructions = "Excellent! Now make it flash at the time when the blue square starts moving, then press Next (You can readjust the slider as many times as you need)";
+                self.startTime = Date.now();
+                window.requestAnimationFrame(self.fadeToBlack.bind(self, 60, 100, 50));
+            }
+            self.rectangle.animate();
+        };
+
+        self.hideErrors = function () {
+            self.hasErrors = false;
+            self.update();
+        };
+
+
+
+        // color animation instruction change
+        self.ms = 600;
+        self.brightnessChange = 50;
+        self.brightnessPerStep = self.brightnessChange / self.ms;
+        self.startTime = -1;
+
+        self.fadeToBlack = function (hue, sat, bri) {
+            var step = Date.now() - self.startTime;
+            var endBri = bri - step * self.brightnessPerStep;
+            self.refs.instructionText.style.color = "hsl(" + hue + ", " + sat + "%," + endBri + "%)";
+
+            // self.update();
+            if (endBri > 0) {
+                window.requestAnimationFrame(self.fadeToBlack.bind(self, hue, sat, bri));
+            }
+                    };
+
+
+
 
     </script>
-</expectations>
+</slider-practice2>

@@ -460,6 +460,7 @@
 
         self.onInit = function () {
             self.mirroring = self.experiment.condition.factors.mirroring;
+            self.extraObjs = self.experiment.condition.factors.altExplanation === "present";
             self.updateCanvas();
         };
 
@@ -502,29 +503,28 @@
 
         self.updateCanvas = function () {
             if (self.currentMoment === 0) {
-                self.rectangle = new self.MovingDisplay(["red", "hidden", "purple"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
-            } else if (self.currentMoment === 1) {
                 self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
-            } else if (self.currentMoment === 2) {
-                self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
-            } else if (self.currentMoment === 3) {
+            } else if (self.currentMoment === 1) {
                 self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
-            } else if (self.currentMoment === 4) {
+            } else if (self.currentMoment === 2) {
                 self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
                 self.rectangle.squareList[1].finalPosition = self.rectangle.squareList[1].startPosition;
                 self.rectangle.drawWall = true;
-                self.rectangle.squareList[1].duration = 0;
                 self.rectangle.draw();
+            } else if (self.currentMoment === 3) {
+                self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                if (self.extraObjs) {
+                    if (self.mirroring) {
+                        self.rectangle.squareList[0].finalPosition[0] -= .5 * self.rectangle.squareDimensions[0];
+                    } else {
+                        self.rectangle.squareList[0].finalPosition[0] += .5 * self.rectangle.squareDimensions[0];
+                    }
+                    self.rectangle.squareList[0].duration = Math.abs(self.rectangle.squareList[0].finalPosition[0] - self.rectangle.squareList[0].startPosition[0]) / self.rectangle.speed;
+                    self.rectangle.squareList[1].moveAt = self.rectangle.squareList[0].moveAt + self.rectangle.squareList[0].duration;
+                }
+            } else if (self.currentMoment === 4) {
+                self.rectangle = new self.MovingDisplay(["red", "hidden", "purple"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
 
-
-                // self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                // if (self.mirroring) {
-                //     self.rectangle.squareList[1].finalPosition[0] = self.rectangle.squareList[1].finalPosition[0] - 20;
-                // } else {
-                //     self.rectangle.squareList[1].finalPosition[0] = self.rectangle.squareList[1].finalPosition[0] + 20;
-                // }
-                // self.rectangle.squareList[1].duration = Math.abs(self.rectangle.squareList[1].finalPosition[0] - self.rectangle.squareList[1].startPosition[0]) / self.rectangle.speed;
-                // self.rectangle.reset();
             }
         };
 

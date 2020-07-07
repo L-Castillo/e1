@@ -1,4 +1,4 @@
-<expectations>
+<test-trial>
     <style>
         div#instructions{
             font-size: 22px;
@@ -8,52 +8,46 @@
             font-size: 23px;
             text-align: center;
         }
-        label {
-            font-size: 20px;
-            padding-bottom: 5px;
-            margin: 5px;
-        }
 
     </style>
     <div id = "instructions">
-        In the next screen you will watch an animation starting like this:
+        Please synchronize the flash with when the <b style="color: #0000FF">blue</b> square starts moving.
     </div>
     <br>
 
     <div>
         <canvas width="950" height="400" style="border: solid black 2px" ref="myCanvas"></canvas>
     </div>
-    <div style="width: 800px; margin: auto">
-        <form>
-            <p style="font-size: 20px">Knowing that the Red square will be the first to move, choose what you expect will happen: </p>
-            <input type="radio" name="expect" id="radioA" value="A" ref="radioA">
-            <label for="radioA" id="labelradioA">{questions[0]}</label>
-            <br>
-            <input type="radio" name="expect" id="radioB" value="B" ref="radioB">
-            <label for="radioB" id="labelradioB">{questions[1]}</label>
-            <br>
-            <input type="radio" name="expect" id="radioC" value="C" ref="radioC">
-            <label for="radioC" id="labelradioC">{questions[2]}</label>
-            <br>
-        </form>
+
+    <div style="width: 950px">
+        <label for="slider">Early</label>
+        <label for="slider" style="float: right">Late</label>
     </div>
-
-
+    <div class="slidecontainer" id="slider">
+        <input onmouseup="{sliderMouseUp}" type="range" min="1" max="200"
+               value="{sliderValue}"
+               class="slider"
+               style="width:950px"
+               ref="mySlider"
+               id = "mySlider"
+               >
+    </div>
     <p class="psychErrorMessage" show="{hasErrors}">{errorText}</p>
+
+
 
     <script>
         var self = this;
-        function shuffleArray(array){
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-
+        self.sliderValue = 0;   // change self.onInit() to make this random
+        self.sliderTouchedCounter = 0;
         self.hasErrors = false;
         self.resultDict = {
-            "expectation": "",
-            "verdict": "",
+            "redMoved":"",
+            "blueMoved":"",
+            "purpleMoved":"",
+            "animationEnded": "",
+            "flashedAt":"",
+            "numberSliderTouches":"",
         };
 
 
@@ -62,9 +56,7 @@
         self.squareDimensions = [50, 50];
         self.speed = 0.3;
         self.showFlash = true;
-        self.answers = ["Red will move, then Blue will move, then Pink will move", "Red will move, then Pink will move, then Blue will move", "Red will move, then Blue and Pink will move at the same time"];
-        self.questions = self.answers.slice();
-        shuffleArray(self.questions);
+
 
         // define what a moving display is - common to all .tags (see inner starting comments for minor changes according to tag needs)
         self.MovingDisplay = function (colours, mirroring, launchTiming, extraObjs, squareDimensions, canvas, slider = null, speed, showFlash = false) {
@@ -230,19 +222,6 @@
                 // and this starts the timing
                 display.setTimeouts(startAt);
             };
-
-            display.getLastFinish = function () {
-                // get list of when each sq finishes moving
-                var finishTimings = [];
-                for (var i = 0; i < 3; i++) {
-                    if (display.squareList[i].colourName !== "hidden") {
-                        finishTimings.push((display.squareList[i].moveAt + display.squareList[i].duration));
-                    }
-                };
-                // and what time is last
-                return Math.max.apply(null, finishTimings);
-            };
-
             display.setTimeouts = function (startInstructions = 1000) {
                 // get list of when each sq finishes moving
                 var finishTimings = display.squareList.map(function (obj) {
@@ -350,54 +329,6 @@
                     ctx.quadraticCurveTo(squareMiddlePoint, controlPointY, squareCMiddleX, squareCY);
                     ctx.stroke();
                 }
-
-                // wall
-                if (display.drawWall) {
-                    var wallX;
-                    var wallY = display.squareList[2].startPosition[1] - display.squareDimensions[1];
-                    var wallWidth = 1 * display.squareDimensions[1];
-                    var wallHeight = 3 * display.squareDimensions[1];
-                    if (self.mirroring) {
-                        wallX = display.squareList[2].startPosition[0] + display.squareDimensions[0] - wallWidth - 1;
-                    } else {
-                        wallX = display.squareList[2].startPosition[0] + 1;
-                    }
-
-                    // ctx.beginPath();
-                    // ctx.rect(wallX, wallY, wallWidth, wallHeight);
-                    // ctx.stroke();
-                    ctx.fillStyle = "#c87630";
-                    ctx.fillRect(wallX, wallY, wallWidth, wallHeight);
-                    // bricks
-                    var brickWidth = wallWidth / 3;
-                    var brickHeight = wallHeight / 10;
-                    for (var r = 0; r < 10; r++) {
-                        if (r !== 0) {
-                            // hor lines
-                            ctx.beginPath();
-                            ctx.moveTo(wallX, wallY + r * brickHeight);
-                            ctx.lineTo(wallX + wallWidth, wallY + r * brickHeight);
-                            ctx.stroke();
-                        }
-                        if (r % 2 === 0) {
-                            for (var c = 0; c < 3; c++) {
-                                if (c !== 0) {
-                                    ctx.beginPath();
-                                    ctx.moveTo(wallX + c * brickWidth, wallY + r * brickHeight);
-                                    ctx.lineTo(wallX + c * brickWidth, wallY + (r + 1) * brickHeight);
-                                    ctx.stroke();
-                                }
-                            }
-                        } else {
-                            for (var c = 0; c < 3; c++) {
-                                ctx.beginPath();
-                                ctx.moveTo(wallX + (c + .5) * brickWidth, wallY + r * brickHeight);
-                                ctx.lineTo(wallX + (c + .5) * brickWidth, wallY + (r + 1) * brickHeight);
-                                ctx.stroke();
-                            }
-                        }
-                    }
-                }
             };
             display.displayFlash = function () {
                 if (display.showFlash === true) {
@@ -442,8 +373,7 @@
 
             display.holeColour = "#d9d2a6";
             display.animationStarted = Infinity;
-            display.drawWall = false;
-            display.animationEnded = true;
+            display.animationEnded = false;
             display.flashState = false; // is the canvas flashing at the moment?
             display.animationTimer = []; // holds all the timeout ids so cancelling is easy
             display.durations = [];
@@ -460,69 +390,53 @@
             self.mirroring = self.experiment.condition.factors.mirroring;
             self.launchTiming = self.experiment.condition.factors.order;
             self.extraObjs = (self.experiment.condition.factors.altExplanation === "present");
-            self.radios = [self.refs.radioA, self.refs.radioB, self.refs.radioC];
-            if (self.extraObjs) {
-                self.answers = ["Red will move and push Pink with the stick, then Pink will move and drag Blue", "Red will move and push Blue, then Blue will move and push Pink", "Red will move push Pink with the stick, then Blue and Pink will move at the same time"];
-            } else {
-                self.answers = ["Red will move and displace Blue, then Blue will move and push Pink", "Red will move and touch Blue, which will make Pink move and after Pink stops moving Blue will move", "Red will move and touch Blue, and then Blue and Pink will move at the same time"];
-            }
-            self.questions = self.answers.slice();
-            shuffleArray(self.questions);
-
 
 
             // make rect
-            self.rectangle = new self.MovingDisplay(self.colours, self.mirroring, self.launchTiming, self.extraObjs, self.squareDimensions, self.refs.myCanvas, null, self.speed, false);
+            self.rectangle = new self.MovingDisplay(self.colours, self.mirroring, self.launchTiming, self.extraObjs, self.squareDimensions, self.refs.myCanvas, self.refs.mySlider, self.speed, self.showFlash);
 
         };
 
+        self.onShown = function () {
+
+            self.rectangle.animate();
+        };
 
         self.canLeave = function () {
             self.hasErrors = false;
-            if (!self.anyRadiosClicked()) {
-                self.errorText = "Please choose one of the options";
+            if (self.sliderTouchedCounter === 0) {
+                self.errorText = "Please move the slider to synchronize the flash with when the blue square starts moving";
                 self.hasErrors = true;
                 return false;
+            } else if(!self.rectangle.animationEnded || self.rectangle.flashOnset === -1){  //  if animation hasn't ended or flash hasn't flashed
+                self.errorText = "Please wait until the animation ends";
+                self.hasErrors = true;
             } else {
                 return true;
             }
         };
 
         self.results = function () {
-            var answers = self.anyRadiosClicked(true);
-            var answer = self.questions[answers[1]];
-            var verdict;
-            if (answer === self.answers[2]) {
-                verdict = "nonsensical";
-            } else if (answer === self.answers[0]) {
-                verdict = "congruent";
-            } else {
-                verdict = "incongruent"
-            }
-            self.resultDict["expectation"] = self.questions[answers[1]];
-            self.resultDict["verdict"] = verdict;
+            // make flashOnset relative to animation start (negative value means flash before the time
+            // at which red was instructed to move [not at which it actually moved])
+            self.rectangle.flashOnset = self.rectangle.flashOnset - self.rectangle.animationStarted;
+            // write in results dict
+            // time at which each square moved
+            self.resultDict["redMoved"] = self.rectangle.squareList[0].movedAt;
+            self.resultDict["blueMoved"] = self.rectangle.squareList[1].movedAt;
+            self.resultDict["purpleMoved"] = self.rectangle.squareList[2].movedAt;
+            self.resultDict["animationEnded"] = self.rectangle.animationEnded - self.rectangle.animationStarted;
+            // time at which flash started
+            self.resultDict["flashedAt"] = self.rectangle.flashOnset;
+            // number of times participant adjusted the slider
+            self.resultDict["numberSliderTouches"] = self.sliderTouchedCounter;
             return self.resultDict;
         };
 
-        // own funcs
-
-        self.anyRadiosClicked = function (what=false) {
-            var somethingClicked = false;
-            var whatChecked;
-            for (var i = 0; i < self.radios.length; i++) {
-                if (self.radios[i].checked) {
-                    somethingClicked = true;
-                    whatChecked = i
-                }
-            }
-            if (!what) {
-                return somethingClicked
-            } else {
-                var returnList = [somethingClicked, whatChecked];
-                return returnList;
-
-            }
-        };
-
+        // page-specific funcs
+        self.sliderMouseUp = function () {
+            self.sliderTouchedCounter++;
+            self.rectangle.animate();
+        }
     </script>
-</expectations>
+</test-trial>

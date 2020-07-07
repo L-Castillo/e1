@@ -1,4 +1,4 @@
-<expectations>
+<slider-practice2>
     <style>
         div#instructions{
             font-size: 22px;
@@ -10,66 +10,32 @@
         }
         label {
             font-size: 20px;
-            padding-bottom: 5px;
-            margin: 5px;
         }
-
     </style>
-    <div id = "instructions">
-        In the next screen you will watch an animation starting like this:
-    </div>
-    <br>
 
+    <div id = "instructions" ref="instructionText"> {instructions} </div>
     <div>
         <canvas width="950" height="400" style="border: solid black 2px" ref="myCanvas"></canvas>
+        <div style="width: 950px">
+            <label for="slider">Early</label>
+            <label for="slider" style="float: right">Late</label>
+        </div>
+        <div class="slidecontainer" id="sliderCont">
+            <input id = "slider" onmouseup="{sliderMouseUp}" type="range" min="1" max="200" value="100" class="slider" style="width:950px" ref="mySlider">
+        </div>
+        <p class="psychErrorMessage" show="{hasErrors}" >{errorText}</p>
     </div>
-    <div style="width: 800px; margin: auto">
-        <form>
-            <p style="font-size: 20px">Knowing that the Red square will be the first to move, choose what you expect will happen: </p>
-            <input type="radio" name="expect" id="radioA" value="A" ref="radioA">
-            <label for="radioA" id="labelradioA">{questions[0]}</label>
-            <br>
-            <input type="radio" name="expect" id="radioB" value="B" ref="radioB">
-            <label for="radioB" id="labelradioB">{questions[1]}</label>
-            <br>
-            <input type="radio" name="expect" id="radioC" value="C" ref="radioC">
-            <label for="radioC" id="labelradioC">{questions[2]}</label>
-            <br>
-        </form>
-    </div>
-
-
-    <p class="psychErrorMessage" show="{hasErrors}">{errorText}</p>
-
     <script>
         var self = this;
-        function shuffleArray(array){
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-
-        self.hasErrors = false;
-        self.resultDict = {
-            "expectation": "",
-            "verdict": "",
-        };
-
-
-        // test vars that can be changed
-        self.colours = ["red", "blue", "purple"];
-        self.squareDimensions = [50, 50];
-        self.speed = 0.3;
-        self.showFlash = true;
-        self.answers = ["Red will move, then Blue will move, then Pink will move", "Red will move, then Pink will move, then Blue will move", "Red will move, then Blue and Pink will move at the same time"];
-        self.questions = self.answers.slice();
-        shuffleArray(self.questions);
-
+        self.instructions = "Try making the screen flash as early as possible and press Next";
+        self.errorText = "Try to move the slider more to the left so that the flash appears earlier";
+        self.currentMoment = 0;
+        self.resultDict = {"sliderTouches": [0,0,0], "nextAttempts": 0}; // nextAttempts = 3 for a perfect participant
         // define what a moving display is - common to all .tags (see inner starting comments for minor changes according to tag needs)
         self.MovingDisplay = function (colours, mirroring, launchTiming, extraObjs, squareDimensions, canvas, slider = null, speed, showFlash = false) {
             // What's different about this Moving Display?
-            // nothing
+            // in setTimeouts flashTime =  startAt - 500 + ... (instead of startAt - 750). This, in conjunction with self.rectangle.squareList[1].moveAt = 0 in self.onInit()
+            // makes the slider Answer here completely different to test trial (flashTime change means flash is 250ms later than in test trial, and moveAt change means bluesquare is 200ms earlier than in a canonical
             var display = this;
 
             // def functions
@@ -134,8 +100,10 @@
                 sq.obedientDraw = function (canvas) {
                     // draws sq in its position, without asking questions! useful sometimes
                     var ctx = canvas.getContext("2d");
-                    ctx.fillStyle = sq.colour;
-                    ctx.fillRect(sq.position[0], sq.position[1], sq.dimensions[0], sq.dimensions[1]);
+                    if (sq.colourName  !== "hidden") {
+                        ctx.fillStyle = sq.colour;
+                        ctx.fillRect(sq.position[0], sq.position[1], sq.dimensions[0], sq.dimensions[1]);
+                    }
                 };
 
 
@@ -157,26 +125,26 @@
                 }
                 display.setUp();
             };
+
             display.setUp = function () {
                 var canvasMargin = display.canvas.width / 4;
 
                 for (var i = 0; i < 3; i++) {
                     // start/end positions
                     var square = display.squareList[i];
-                    var sqWidth = display.squareDimensions[0];
                     var startPosition, endPosition;
                     if (i === 0) {
-                        startPosition = display.mirrored ? canvasMargin + 5 * sqWidth : canvasMargin;
-                        endPosition = display.mirrored ? startPosition - 2.5 * sqWidth : canvasMargin + 2.5 *
-                            sqWidth;
+                        startPosition = display.mirrored ? canvasMargin + 5 * display.squareDimensions[0] : canvasMargin;
+                        endPosition = display.mirrored ? startPosition - 2.5 * display.squareDimensions[0] : canvasMargin + 2.5 *
+                            display.squareDimensions[0];
                     } else {
-                        var distanceTravelled = sqWidth + 2 * sqWidth * (i - 1);
+                        var distanceTravelled = display.squareDimensions[0] + 2 * display.squareDimensions[0] * (i - 1);
                         startPosition = display.mirrored ?
-                            display.squareList[0].finalPosition[0] - distanceTravelled - .5 * sqWidth: // if mirrored travel left from A
-                            display.squareList[0].finalPosition[0] + distanceTravelled + .5 * sqWidth; // if not travel right
+                            display.squareList[0].finalPosition[0] - distanceTravelled : // if mirrored travel left from A
+                            display.squareList[0].finalPosition[0] + distanceTravelled; // if not travel right
                         endPosition = display.mirrored ?
-                            startPosition - sqWidth : // same idea
-                            startPosition + sqWidth;
+                            startPosition - display.squareDimensions[0] : // same idea
+                            startPosition + display.squareDimensions[0];
                     }
                     square.startPosition = [startPosition, 100];
                     square.finalPosition = [endPosition, 100];
@@ -198,6 +166,7 @@
                     display.squareList[1].moveAt = display.squareList[2].moveAt + display.squareList[2].duration;
                 }
             };
+
             display.reset = function () {
                 // reset squares to startPosition
                 for (var i = 0; i < 3; i++) {
@@ -209,11 +178,47 @@
                 display.animationEnded = false;
             };
 
+            display.getTrueLastFinish = function () {
+                // get list of when each sq finishes moving
+                var finishTimings = [];
+                for (var i = 0; i < 3; i++) {
+                    if (display.squareList[i].colourName !== "hidden") {
+                        finishTimings.push(display.squareList[i].moveAt + display.squareList[i].duration);
+                    }
+                }
+                 // and what time is last
+                return Math.max.apply(null, finishTimings);
+            };
+
+            display.setTimeouts = function (startInstructions = 1000) {
+                var finishTimings = display.squareList.map(function (obj) {
+                    return obj.moveAt + obj.duration
+                });
+                var lastFinish = Math.max.apply(null, finishTimings); // and what time is last
+                var startAt = startInstructions; // some external callings may want no delay when starting (e.g. check training tags). 1000ms lets page load up
+                var timeoutId;  //  start timeouts for start and end and add to a list (which allows to stop everything if animation restarted, see self.animate())
+                timeoutId = setTimeout(display.startAnimation.bind(display), startAt);
+                display.animationTimer.push(timeoutId);
+                timeoutId = setTimeout(display.endAnimation.bind(display), startAt + display.getTrueLastFinish()); // using getTrueLastFinish triggers endAnimation when Blue ends
+                display.animationTimer.push(timeoutId);
+                // timings for flash
+                if (display.showFlash) {
+                    var animationSpace = lastFinish + 1000; // add 1000s so one can set flash 500ms after lastFinish
+                    var flashTime =  startAt - 500 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 750ms before red starts moving (250ms after animation start).
+                    // 0 ----------------------- 250 --------------------- 1000 ---------------------------- lastFinish ---------------- lastFinish + 1000 -----> // time arrow (ms)
+                    //(animationStart) --- (earliestPossibleFlash) ------(startAt: red starts moving) -----(lastSquare stops moving) --(last possible Flash) --->
+                    timeoutId = setTimeout(display.displayFlash.bind(display), flashTime);
+                    display.animationTimer.push(timeoutId);
+                    timeoutId = setTimeout(display.displayFlash.bind(display), flashTime + 25); // this makes the flash 25ms long
+                    display.animationTimer.push(timeoutId);
+                }
+            };
 
             display.startAnimation = function () {
                 display.animationStarted = Date.now();
                 window.requestAnimationFrame(display.draw.bind(display));
             };
+
             display.endAnimation = function () {
                 display.animationEnded = Date.now();
             };
@@ -231,47 +236,11 @@
                 display.setTimeouts(startAt);
             };
 
-            display.getLastFinish = function () {
-                // get list of when each sq finishes moving
-                var finishTimings = [];
-                for (var i = 0; i < 3; i++) {
-                    if (display.squareList[i].colourName !== "hidden") {
-                        finishTimings.push((display.squareList[i].moveAt + display.squareList[i].duration));
-                    }
-                };
-                // and what time is last
-                return Math.max.apply(null, finishTimings);
-            };
-
-            display.setTimeouts = function (startInstructions = 1000) {
-                // get list of when each sq finishes moving
-                var finishTimings = display.squareList.map(function (obj) {
-                    return obj.moveAt + obj.duration
-                });
-                var lastFinish = Math.max.apply(null, finishTimings); // and what time is last
-                var startAt = startInstructions; // some external callings may want no delay when starting (e.g. check training tags). 1000ms lets page load up
-                var timeoutId;  //  start timeouts for start and end and add to a list (which allows to stop everything if animation restarted, see self.animate())
-                timeoutId = setTimeout(display.startAnimation.bind(display), startAt);
-                display.animationTimer.push(timeoutId);
-                timeoutId = setTimeout(display.endAnimation.bind(display), startAt + lastFinish);
-                display.animationTimer.push(timeoutId);
-                // timings for flash
-                if (display.showFlash) {
-                    var animationSpace = lastFinish + 1000; // add 1000s so one can set flash after lastFinish
-                    var flashTime =  startAt - 750 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 750ms before red starts moving (250ms after animation start).
-                    // 0 ----------------------- 250 --------------------- 1000 ---------------------------- lastFinish ---------------- lastFinish + 1000 -----> // time arrow (ms)
-                    //(animationStart) --- (earliestPossibleFlash) ------(startAt: red starts moving) -----(lastSquare stops moving) --(last possible Flash) --->
-
-                    timeoutId = setTimeout(display.displayFlash.bind(display), flashTime);
-                    display.animationTimer.push(timeoutId);
-                    timeoutId = setTimeout(display.displayFlash.bind(display), flashTime + 25); // this makes the flash 25ms long
-                    display.animationTimer.push(timeoutId);
-                }
-            };
             display.draw = function () {
                 // empty canvas
                 var ctx = display.canvas.getContext("2d");
                 ctx.clearRect(0, 0, display.canvas.width, display.canvas.height);
+
                 // draw squares
                 var step = Date.now() - display.animationStarted;
                 for (var i = 0; i < display.squareList.length; i++) {
@@ -296,6 +265,7 @@
                     window.requestAnimationFrame(display.draw.bind(display));
                 }
             };
+
             display.drawExtraObjects = function () {
                 var ctx = display.canvas.getContext('2d');
                 // some vars to make more legible
@@ -305,7 +275,7 @@
 
                 // stick
                 if (display.squareList[0].colourName !== "hidden") {
-                    var stickSize = squareA.dimensions[0] * 2.5;
+                    var stickSize = squareA.dimensions[0] * 2;
 
                     var startX, endX;
                     if (display.mirrored) {
@@ -330,11 +300,11 @@
 
                 // draw chain
                 if (display.squareList[1].colourName !== "hidden" && display.squareList[2].colourName !== "hidden") {
-                    var squareBMiddleX, squareBY, squareCMiddleX, squareCY;
+                    var squareBMiddleX, squareBY, squareCMiddleX, squareBY;
                     squareBMiddleX = squareB.position[0] + squareB.dimensions[0] * 1 / 2;
                     squareCMiddleX = squareC.position[0] + squareC.dimensions[0] * 1 / 2;
                     squareBY = squareB.position[1] + squareB.dimensions[1] * 9 / 10;
-                    squareCY = squareC.position[1] + squareC.dimensions[1] * 9 / 10;
+                    squareBY = squareC.position[1] + squareC.dimensions[1] * 9 / 10;
 
                     var distanceBetweenSquares, squareMiddlePoint;
                     distanceBetweenSquares = Math.abs(squareBMiddleX - squareCMiddleX);
@@ -347,58 +317,11 @@
                     // chain is Q bezier curve defined by points (squareBMiddleX, squareBY), (squareMiddlePoint, controlPointY) and (squareCMiddleX, squareBY)
                     ctx.beginPath();
                     ctx.moveTo(squareBMiddleX, squareBY);
-                    ctx.quadraticCurveTo(squareMiddlePoint, controlPointY, squareCMiddleX, squareCY);
+                    ctx.quadraticCurveTo(squareMiddlePoint, controlPointY, squareCMiddleX, squareBY);
                     ctx.stroke();
                 }
-
-                // wall
-                if (display.drawWall) {
-                    var wallX;
-                    var wallY = display.squareList[2].startPosition[1] - display.squareDimensions[1];
-                    var wallWidth = 1 * display.squareDimensions[1];
-                    var wallHeight = 3 * display.squareDimensions[1];
-                    if (self.mirroring) {
-                        wallX = display.squareList[2].startPosition[0] + display.squareDimensions[0] - wallWidth - 1;
-                    } else {
-                        wallX = display.squareList[2].startPosition[0] + 1;
-                    }
-
-                    // ctx.beginPath();
-                    // ctx.rect(wallX, wallY, wallWidth, wallHeight);
-                    // ctx.stroke();
-                    ctx.fillStyle = "#c87630";
-                    ctx.fillRect(wallX, wallY, wallWidth, wallHeight);
-                    // bricks
-                    var brickWidth = wallWidth / 3;
-                    var brickHeight = wallHeight / 10;
-                    for (var r = 0; r < 10; r++) {
-                        if (r !== 0) {
-                            // hor lines
-                            ctx.beginPath();
-                            ctx.moveTo(wallX, wallY + r * brickHeight);
-                            ctx.lineTo(wallX + wallWidth, wallY + r * brickHeight);
-                            ctx.stroke();
-                        }
-                        if (r % 2 === 0) {
-                            for (var c = 0; c < 3; c++) {
-                                if (c !== 0) {
-                                    ctx.beginPath();
-                                    ctx.moveTo(wallX + c * brickWidth, wallY + r * brickHeight);
-                                    ctx.lineTo(wallX + c * brickWidth, wallY + (r + 1) * brickHeight);
-                                    ctx.stroke();
-                                }
-                            }
-                        } else {
-                            for (var c = 0; c < 3; c++) {
-                                ctx.beginPath();
-                                ctx.moveTo(wallX + (c + .5) * brickWidth, wallY + r * brickHeight);
-                                ctx.lineTo(wallX + (c + .5) * brickWidth, wallY + (r + 1) * brickHeight);
-                                ctx.stroke();
-                            }
-                        }
-                    }
-                }
             };
+
             display.displayFlash = function () {
                 if (display.showFlash === true) {
                     if (display.flashState === false) {
@@ -406,23 +329,48 @@
                         display.canvas.style.backgroundColor = "black";
                         display.flashState = true;
 
-                        // make squares black if they are hidden
+                        // make squares black
                         for (var i = 0; i < display.squareList.length; i++) {
-                            if (display.squareList[i].colourName === "hidden") {
-                                display.squareList[i].colour = "#000000";
-                                display.squareList[i].obedientDraw(display.canvas);
-                            }
+                            display.squareList[i].colour = "#000000";
+                            // if (display.squareList[i].colourName === "hidden") {
+                            //     display.squareList[i].colour = "#000000";
+                            //     // display.squareList[i].obedientDraw(display.canvas);
+                            // }
                         }
+                        display.holeColour = "#000000";
                     } else {
                         display.canvas.style.backgroundColor = "white";
                         display.flashState = false;
                         // make squares white again if they are hidden
                         for (var i = 0; i < display.squareList.length; i++) {
-                            if (display.squareList[i].colourName === "hidden") {
-                                display.squareList[i].colour = "#FFFFFF";
-                                display.squareList[i].obedientDraw(display.canvas);
+                            switch (display.squareList[i].colourName) {
+                                case "red":
+                                    display.squareList[i].colour = "#FF0000";
+                                    break;
+                                case "green":
+                                    display.squareList[i].colour = "#00FF00";
+                                    break;
+                                case "blue":
+                                    display.squareList[i].colour = "#0000FF";
+                                    break;
+                                case "black":
+                                    display.squareList[i].colour = "#000000";
+                                    break;
+                                case "hidden":
+                                    display.squareList[i].colour = "#FFFFFF";
+                                    break;
+                                case "purple":
+                                    display.squareList[i].colour = "#ec00f0";
+                                    break;
                             }
+                            //
+                            // if (display.squareList[i].colourName === "hidden") {
+                            //     display.squareList[i].colour = "#FFFFFF";
+                            //     display.squareList[i].obedientDraw(display.canvas);
+                            // }
                         }
+                        display.holeColour = "#d9d2a6";
+
                     }
                     display.draw(); // avoids funky lines if animation has ended
                 }
@@ -441,8 +389,8 @@
             display.showFlash = showFlash;
 
             display.holeColour = "#d9d2a6";
+            display.pauseColour = "#408040";
             display.animationStarted = Infinity;
-            display.drawWall = false;
             display.animationEnded = true;
             display.flashState = false; // is the canvas flashing at the moment?
             display.animationTimer = []; // holds all the timeout ids so cancelling is easy
@@ -454,75 +402,106 @@
             display.reset();
         };
 
+
         // overwrite funcs
         self.onInit = function () {
-            // get condition info + mirroring
             self.mirroring = self.experiment.condition.factors.mirroring;
-            self.launchTiming = self.experiment.condition.factors.order;
-            self.extraObjs = (self.experiment.condition.factors.altExplanation === "present");
-            self.radios = [self.refs.radioA, self.refs.radioB, self.refs.radioC];
-            if (self.extraObjs) {
-                self.answers = ["Red will move and push Pink with the stick, then Pink will move and drag Blue", "Red will move and push Blue, then Blue will move and push Pink", "Red will move push Pink with the stick, then Blue and Pink will move at the same time"];
-            } else {
-                self.answers = ["Red will move and displace Blue, then Blue will move and push Pink", "Red will move and touch Blue, which will make Pink move and after Pink stops moving Blue will move", "Red will move and touch Blue, and then Blue and Pink will move at the same time"];
-            }
-            self.questions = self.answers.slice();
-            shuffleArray(self.questions);
-
-
-
-            // make rect
-            self.rectangle = new self.MovingDisplay(self.colours, self.mirroring, self.launchTiming, self.extraObjs, self.squareDimensions, self.refs.myCanvas, null, self.speed, false);
-
+            self.rectangle = new self.MovingDisplay(["hidden", "blue", "hidden"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, self.refs.mySlider, 0.3, true);
+            self.rectangle.squareList[1].moveAt = 0;
+            self.rectangle.reset();
+        };
+        self.onShown = function () {
+            self.rectangle.animate();
         };
 
-
         self.canLeave = function () {
+            var PSS = self.rectangle.flashOnset - self.rectangle.animationStarted;
+            self.resultDict["nextAttempts"]++;
             self.hasErrors = false;
-            if (!self.anyRadiosClicked()) {
-                self.errorText = "Please choose one of the options";
+            if(!self.rectangle.animationEnded || self.rectangle.flashOnset === -1) {  //  if animation hasn't ended or flash hasn't flashed
+                self.errorText = "Please wait until the animation ends before pressing Next";
                 self.hasErrors = true;
                 return false;
-            } else {
+            } else if ((self.currentMoment === 0 && self.refs.mySlider.value < 20) || (self.currentMoment === 1 && self.refs.mySlider.value > 180)) {
+                self.currentMoment++;
+                self.changeInstructions();
+                return false;
+            } else if (self.currentMoment === 2 && (Math.abs(PSS) <  400)) {
                 return true;
+            } else {
+                self.hasErrors = true;
+                if (self.currentMoment === 0) {
+                    self.errorText = "Try to move the slider more to the left so that the flash appears earlier";
+                } else if (self.currentMoment === 1) {
+                    self.errorText = "Try to move the slider more to the right so that the flash appears later. Notice that the new instructions want you to make the flash appear as late as possible.";
+                } else if (self.currentMoment === 2) {
+                    if (PSS < -400) {
+                        self.errorText = "That's a bit too early. Try moving the slider more to the right so that the flash happens when the blue square starts moving";
+                    } else if (PSS > 400) {
+                        self.errorText = "That's a bit too late. Try moving the slider more to the left so that the flash happens when the blue square starts moving";
+                    }
+                }
             }
         };
 
         self.results = function () {
-            var answers = self.anyRadiosClicked(true);
-            var answer = self.questions[answers[1]];
-            var verdict;
-            if (answer === self.answers[2]) {
-                verdict = "nonsensical";
-            } else if (answer === self.answers[0]) {
-                verdict = "congruent";
-            } else {
-                verdict = "incongruent"
-            }
-            self.resultDict["expectation"] = self.questions[answers[1]];
-            self.resultDict["verdict"] = verdict;
+            // get flashTime
+            self.rectangle.flashOnset = self.rectangle.flashOnset - self.rectangle.animationStarted;
+            // write in results dict
+            // crucial times
+            self.resultDict["blueMoved"] = self.rectangle.squareList[1].movedAt;
+            self.resultDict["flashedAt"] = self.rectangle.flashOnset;
             return self.resultDict;
+            // slider touches = 2,1 -> participant touched slider twice when asked to sync early and once when asked late
+            // nextAttempts = 2 -> participant pressed "Next" twice more than absolutely necessary (value starts at -2)
         };
 
-        // own funcs
-
-        self.anyRadiosClicked = function (what=false) {
-            var somethingClicked = false;
-            var whatChecked;
-            for (var i = 0; i < self.radios.length; i++) {
-                if (self.radios[i].checked) {
-                    somethingClicked = true;
-                    whatChecked = i
-                }
-            }
-            if (!what) {
-                return somethingClicked
-            } else {
-                var returnList = [somethingClicked, whatChecked];
-                return returnList;
-
-            }
+        // page-specific funcs
+        self.sliderMouseUp = function () {
+            self.hideErrors();
+            self.rectangle.animate();
+            self.resultDict["sliderTouches"][self.currentMoment]++
         };
+
+        self.changeInstructions = function () {
+            if (self.currentMoment === 1) {
+                self.instructions = "Excellent! Now make it flash as late as possible, then press Next. ";
+                self.startTime = Date.now();
+                window.requestAnimationFrame(self.fadeToBlack.bind(self, 60, 100, 50));
+            } else if (self.currentMoment === 2) {
+                self.instructions = "Excellent! Now make it flash at the time when the blue square starts moving, then press Next (You can readjust the slider as many times as you need)";
+                self.startTime = Date.now();
+                window.requestAnimationFrame(self.fadeToBlack.bind(self, 60, 100, 50));
+            }
+            self.rectangle.animate();
+        };
+
+        self.hideErrors = function () {
+            self.hasErrors = false;
+            self.update();
+        };
+
+
+
+        // color animation instruction change
+        self.ms = 600;
+        self.brightnessChange = 50;
+        self.brightnessPerStep = self.brightnessChange / self.ms;
+        self.startTime = -1;
+
+        self.fadeToBlack = function (hue, sat, bri) {
+            var step = Date.now() - self.startTime;
+            var endBri = bri - step * self.brightnessPerStep;
+            self.refs.instructionText.style.color = "hsl(" + hue + ", " + sat + "%," + endBri + "%)";
+
+            // self.update();
+            if (endBri > 0) {
+                window.requestAnimationFrame(self.fadeToBlack.bind(self, hue, sat, bri));
+            }
+                    };
+
+
+
 
     </script>
-</expectations>
+</slider-practice2>

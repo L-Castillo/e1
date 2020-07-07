@@ -50,8 +50,8 @@
         // define what a moving display is - common to all .tags (see inner starting comments for minor changes according to tag needs)
         self.MovingDisplay = function (colours, mirroring, launchTiming, extraObjs, squareDimensions, canvas, slider = null, speed, showFlash = false) {
             // What's different about this Moving Display?
-            // in setTimeouts flashTime =  startAt - 500 + ... (instead of startAt - 750). This, in conjunction with self.rectangle.squareList[1].moveAt = 0 in self.onInit()
-            // makes the slider Answer here completely different to test trial (flashTime change means flash is 250ms later than in test trial, and moveAt change means bluesquare is 200ms earlier than in a canonical
+            // in setTimeouts flashTime =  startAt + 195 + ... (instead of startAt - 750). This, in conjunction with self.rectangle.squareList[1].moveAt = 400 in self.onInit()
+            // makes the slider Answer here completely different to test trial
 
             var display = this;
 
@@ -241,7 +241,7 @@
                 // timings for flash
                 if (display.showFlash) {
                     var animationSpace = lastFinish + 1000; // add 1000s so one can set flash 500ms after lastFinish
-                    var flashTime =  startAt - 500 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 750ms before red starts moving (250ms after animation start).
+                    var flashTime =  startAt + 195 + animationSpace / 200 * display.slider.value; // if slider.value == 0 flash 750ms before red starts moving (250ms after animation start).
                     // 0 ----------------------- 250 --------------------- 1000 ---------------------------- lastFinish ---------------- lastFinish + 1000 -----> // time arrow (ms)
                     //(animationStart) --- (earliestPossibleFlash) ------(startAt: red starts moving) -----(lastSquare stops moving) --(last possible Flash) --->
 
@@ -441,17 +441,19 @@
         // overwrite funcs
         self.onInit = function () {
             self.mirroring = self.experiment.condition.factors.mirroring;
-            self.rectangle = new self.MovingDisplay(["red", "blue", "purple"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, self.refs.mySlider, 0.3, true);
-            self.rectangle.squareList[1].moveAt = 0;
+            self.rectangle = new self.MovingDisplay(["red", "blue", "red"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, self.refs.mySlider, 0.3, true);
+            // self.rectangle.squareList[1].moveAt = 0;
             self.rectangle.squareList[1].finalPosition[0] = self.mirroring ? self.rectangle.squareList[1].finalPosition[0] - self.rectangle.squareDimensions[0] : self.rectangle.squareList[1].finalPosition[0] + self.rectangle.squareDimensions[0];
 
             self.rectangle.squareList[0].startPosition = [self.rectangle.squareList[1].startPosition[0], self.rectangle.squareList[1].startPosition[1] + 2 * self.rectangle.squareDimensions[1]];
-            self.rectangle.squareList[0].finalPosition = self.rectangle.squareList[0].startPosition;
+            self.rectangle.squareList[0].finalPosition[0] = self.rectangle.squareList[1].finalPosition[0];
+            self.rectangle.squareList[0].finalPosition[1] = self.rectangle.squareList[0].startPosition[1];
             self.rectangle.squareList[2].startPosition = [self.rectangle.squareList[1].startPosition[0], self.rectangle.squareList[1].startPosition[1] + 4 * self.rectangle.squareDimensions[1]];
-            self.rectangle.squareList[2].finalPosition = self.rectangle.squareList[2].startPosition;
+            self.rectangle.squareList[2].finalPosition[0] = self.rectangle.squareList[1].finalPosition[0];
+            self.rectangle.squareList[2].finalPosition[1] = self.rectangle.squareList[2].startPosition[1];
 
             for (var i = 0; i < 3; i++) {
-                self.rectangle.squareList[i].moveAt = 0;
+                self.rectangle.squareList[i].moveAt = i===2 ? 0 : 400 + (i % 2) * 400;
                 self.rectangle.squareList[i].duration = Math.abs(self.rectangle.squareList[i].finalPosition[0] - self.rectangle.squareList[i].startPosition[0]) / self.rectangle.speed;
             }
 

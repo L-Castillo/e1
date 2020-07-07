@@ -52,49 +52,8 @@
 
     </div>
     <script>
-        function shuffleArray(array){
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
 
         var self = this;
-
-        // shuffle questions
-        self.possibleMoments = [0, 1, 2, 3, 4,];
-        self.errMoments = [];
-        self.timeStamps = [];
-        self.instructionText = "Please select an answer to the following questions, then press \"Check Answer\" to check your answer:";
-        shuffleArray(self.possibleMoments);
-        self.currentIndex = 0;
-        self.currentMoment = self.possibleMoments[self.currentIndex];
-
-        self.firstMovers = ["Pink", "Red", "Red", "Blue", "the stick"]; // changes question
-
-        // shuffle MCQ possible answers
-        self.moment0Qs = ["Pink and Blue will move at the same time", "Pink will move but Blue will not", "Pink will move and then drag Blue"];
-        self.moment1Qs = ["Red will move and displace Blue", "Red will move and Blue will not", "Red and Blue will move at the same time"];
-        self.moment2Qs = ["Red will move and push Pink with the stick", "Red will move and Pink will not", "Red and Pink will move at the same time"];
-        self.moment3Qs = ["Pink and Blue will move at the same time", "Blue will move but Pink will not", "Blue will move and push Pink"];
-        self.moment4Qs = ["Red will move and push Blue with the stick", "Red will move and the stick go through Blue", "Red and Blue will move at the same time"];
-        self.questionsStandardOrder = [self.moment0Qs, self.moment1Qs, self.moment2Qs, self.moment3Qs, self.moment4Qs];
-        self.questions = [];
-        for (var i = 0; i < self.questionsStandardOrder.length; i++) {
-            var qArray = self.questionsStandardOrder[i].slice();
-            shuffleArray(qArray);
-            self.questions.push(qArray);
-        }
-
-        // define correct answers
-        self.answers = ["Pink will move and then drag Blue", "Red will move and displace Blue", "Red will move and push Pink with the stick", "Blue will move and push Pink", "Red will move and the stick go through Blue"];
-
-        self.feedbackTime = false;
-        self.lockNext = true;
-        self.pageResults = {0:[], 1:[], 2:[], 3:[], 4:[], "presentationOrder": "", "totalErrors": 0};
-        self.errorText;
-        self.feedbackText;
-        self.hasToWatchAgain = false;
 
 
         self.MovingDisplay = function (colours, mirroring, launchTiming, extraObjs, squareDimensions, canvas, slider = null, speed, showFlash = false) {
@@ -505,9 +464,23 @@
 
         self.onInit = function () {
             self.mirroring = self.experiment.condition.factors.mirroring;
+            self.extraObjs = self.experiment.condition.factors.altExplanation === "present";
+
             self.radios = [self.refs.radioA, self.refs.radioB, self.refs.radioC];
+
             self.refs.btnAnimate.disabled = true;
-            // self.setUpNextQuestion();
+
+            // shuffle MCQ possible answers
+            self.moment0Qs = ["Pink and Blue will move at the same time", "Pink will move but Blue will not", "Pink will move and then drag Blue"];
+            self.moment1Qs = ["Pink and Blue will move at the same time", "Blue will move but Pink will not", "Blue will move and push Pink"];
+            self.moment2Qs = ["Red will move and push Blue with the stick", "Red will move and the stick go through Blue", "Red and Blue will move at the same time"];
+            self.moment3Qs = ["Red will move and " + (self.extraObjs ? "push" : "displace") + " Blue", "Red will move and Blue will not", "Red and Blue will move at the same time"];
+            self.moment4Qs = ["Red will move and push Pink with the stick", "Red will move and Pink will not", "Red and Pink will move at the same time"];
+            self.questionsStandardOrder = [self.moment0Qs, self.moment1Qs, self.moment2Qs, self.moment3Qs, self.moment4Qs];
+            // define correct answers
+            self.answers = ["Pink will move and then drag Blue", "Blue will move and push Pink", "Red will move and the stick go through Blue", "Red will move and " + (self.extraObjs ? "push" : "displace") + " Blue", "Red will move and push Pink with the stick"];
+
+            self.shuffleMCQs();
         };
 
         self.onShown = function () {
@@ -526,7 +499,7 @@
                     timeInOrderOfPresentation.push(timeSpent);
                 }
             }
-                // arrange the times in order of moments (time spent in moment 0, time spent in 1, etc) irrespectively of when shown.
+            // arrange the times in order of moments (time spent in moment 0, time spent in 1, etc) irrespectively of when shown.
             for (var i = 0; i < self.possibleMoments.length; i++) {
                 timeInMomentOrder[self.possibleMoments[i]] += timeInOrderOfPresentation[i];
             }
@@ -565,6 +538,7 @@
                     self.moveOn();
                 } else {
                     shuffleArray(self.errMoments);
+                    self.shuffleMCQs();
                     self.possibleMoments = self.possibleMoments.concat(self.errMoments);
                     self.errMoments = [];
                     self.timeStamps.pop();
@@ -580,16 +554,26 @@
                 if (self.currentMoment === 0) {
                     self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
                 } else if (self.currentMoment === 1) {
-                    self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                } else if (self.currentMoment === 2) {
-                    self.rectangle = new self.MovingDisplay(["red", "hidden", "purple"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                } else if (self.currentMoment === 3) {
                     self.rectangle = new self.MovingDisplay(["hidden", "blue", "purple"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
-                } else if (self.currentMoment === 4) {
+                } else if (self.currentMoment === 2) {
                     self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
                     self.rectangle.squareList[1].finalPosition = self.rectangle.squareList[1].startPosition;
                     self.rectangle.drawWall = true;
                     self.rectangle.draw();
+                } else if (self.currentMoment === 3) {
+                    self.rectangle = new self.MovingDisplay(["red", "blue", "hidden"], self.mirroring, "canonical", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                    if (self.extraObjs) {
+                        if (self.mirroring) {
+                            self.rectangle.squareList[0].finalPosition[0] -= .5 * self.rectangle.squareDimensions[0];
+                        } else {
+                            self.rectangle.squareList[0].finalPosition[0] += .5 * self.rectangle.squareDimensions[0];
+                        }
+                        self.rectangle.squareList[0].duration = Math.abs(self.rectangle.squareList[0].finalPosition[0] - self.rectangle.squareList[0].startPosition[0]) / self.rectangle.speed;
+                        self.rectangle.squareList[1].moveAt = self.rectangle.squareList[0].moveAt + self.rectangle.squareList[0].duration;
+                    }
+                } else if (self.currentMoment === 4) {
+                    self.rectangle = new self.MovingDisplay(["red", "hidden", "purple"], self.mirroring, "reversed", true, [50, 50], self.refs.myCanvas, null, 0.3, false);
+
                 }
                 self.update(); // this is needed to update display of radios and hide feedback
             }
@@ -686,6 +670,40 @@
             self.rectangle.draw();
             self.update();
         };
+
+        self.shuffleMCQs = function () {
+            self.questions = [];
+            for (var i = 0; i < self.questionsStandardOrder.length; i++) {
+                var qArray = self.questionsStandardOrder[i].slice();
+                shuffleArray(qArray);
+                self.questions.push(qArray);
+            }
+        };
+
+        function shuffleArray(array){
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // shuffle questions
+        self.possibleMoments = [0, 1, 2, 3, 4,];
+        self.errMoments = [];
+        self.timeStamps = [];
+        self.instructionText = "Please select an answer to the following questions, then press \"Check Answer\" to check your answer:";
+        shuffleArray(self.possibleMoments);
+        self.currentIndex = 0;
+        self.currentMoment = self.possibleMoments[self.currentIndex];
+
+        self.firstMovers = ["Pink", "Blue", "Red", "Red", "Red"]; // changes question
+
+        self.feedbackTime = false;
+        self.lockNext = true;
+        self.pageResults = {0:[], 1:[], 2:[], 3:[], 4:[], "presentationOrder": "", "totalErrors": 0};
+        self.errorText;
+        self.feedbackText;
+        self.hasToWatchAgain = false;
 
 
     </script>

@@ -1,4 +1,4 @@
-<expectations>
+<expectations2>
     <style>
         div#instructions{
             font-size: 22px;
@@ -8,10 +8,14 @@
             font-size: 23px;
             text-align: center;
         }
-        label {
+        p {
+            font-size: 22px;
+            margin: auto;
+            text-align: center;
+        }
+        td{
             font-size: 20px;
-            padding-bottom: 5px;
-            margin: 5px;
+            font-weight: bold;
         }
 
     </style>
@@ -23,26 +27,41 @@
     <div>
         <canvas width="950" height="400" style="border: solid black 2px" ref="myCanvas"></canvas>
     </div>
-    <div style="width: 800px; margin: auto">
-        <form>
-            <p style="font-size: 20px">Knowing that the Red square will be the first to move, choose what you expect will happen: </p>
-            <input type="radio" name="expect" id="radioA" value="A" ref="radioA">
-            <label for="radioA" id="labelradioA">{questions[0]}</label>
-            <br>
-            <input type="radio" name="expect" id="radioB" value="B" ref="radioB">
-            <label for="radioB" id="labelradioB">{questions[1]}</label>
-            <br>
-            <input type="radio" name="expect" id="radioC" value="C" ref="radioC">
-            <label for="radioC" id="labelradioC">{questions[2]}</label>
-            <br>
-        </form>
-    </div>
+    <br>
+    <p>Knowing that the Red square will be the first to move, please place events in the order you think they will occur: </p>
+    <br>
+    <table ref="originalContainer" style= "width:750px; height: 100px; margin: auto; border: solid black 1px; table-layout: fixed">
+        <tr>
+            <td draggable="true" ondragstart="{drag.bind(event)}" ondragover="{allowDrop.bind(event)}" ondrop="{dropQuestion.bind(event)}" ondragleave="{returnWhite.bind(event)}" ondragend="{allWhite}">{events[0]}</td>
+            <td draggable="true" ondragstart="{drag.bind(event)}" ondragover="{allowDrop.bind(event)}" ondrop="{dropQuestion.bind(event)}" ondragleave="{returnWhite.bind(event)}" ondragend="{allWhite}">{events[1]}</td>
+            <td draggable="true" ondragstart="{drag.bind(event)}" ondragover="{allowDrop.bind(event)}" ondrop="{dropQuestion.bind(event)}" ondragleave="{returnWhite.bind(event)}" ondragend="{allWhite}">{events[2]}</td>
+        </tr>
+    </table>
+    <p> (Drag and drop each event to the rectangle below) </p>
+    <br>
+    <table ref="receivingContainer"  style= "width:300px; height: 200px; margin: auto; border: solid black 1px;">
+        <tr>
+            <td id ="answ1" draggable="{reportedOrder[0] !== undefined}" ondragstart="{drag.bind(event)}" ondragover="{allowDrop.bind(event)}" ondrop="{dropAnswer.bind(event)}" ondragleave="{returnWhite.bind(event)}" ondragend="{allWhite}">{reportedOrder[0] == undefined ? "" : "1. " + reportedOrder[0]}</td>
+        </tr>
+        <tr>
+            <td id ="answ2" draggable="{reportedOrder[1] !== undefined}" ondragstart="{drag.bind(event)}" ondragover="{allowDrop.bind(event)}" ondrop="{dropAnswer.bind(event)}" ondragleave="{returnWhite.bind(event)}" ondragend="{allWhite}">{reportedOrder[1] == undefined ? "" : "2. " + reportedOrder[1]}</td>
+        </tr>
+        <tr>
+            <td id ="answ3" draggable="{reportedOrder[2] !== undefined}" ondragstart="{drag.bind(event)}" ondragover="{allowDrop.bind(event)}" ondrop="{dropAnswer.bind(event)}" ondragleave="{returnWhite.bind(event)}" ondragend="{allWhite}">{reportedOrder[2] == undefined ? "" : "3. " + reportedOrder[2]}</td>
+        </tr>
 
+
+    </table>
+    <p> You may reorder events, if you change your mind</p>
+    <p> You may also start again by pressing this button:</p>
+    <br>
+    <button class="psychButton" onclick="{restartDnD}" style="margin-left: 438px; color: red"> Reset</button>
+
+<!--    <textarea ref="textArea" style="width: 500px; height: 200px; margin: 0 0 0 220px; font-size: 20px"></textarea>-->
 
     <p class="psychErrorMessage" show="{hasErrors}">{errorText}</p>
 
     <script>
-        var self = this;
         function shuffleArray(array){
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -50,21 +69,21 @@
             }
         }
 
+        var self = this;
         self.hasErrors = false;
         self.resultDict = {
-            "expectation": "",
-            "verdict": "",
+            "reportedOrder": ""
         };
-
+        self.events = ["The red square moves", "The blue square moves", "The pink square moves"];
+        self.reportedOrder = [];
+        shuffleArray(self.events);
 
         // test vars that can be changed
         self.colours = ["red", "blue", "purple"];
         self.squareDimensions = [50, 50];
         self.speed = 0.3;
         self.showFlash = true;
-        self.answers = ["Red will move, then Blue will move, then Pink will move", "Red will move, then Pink will move, then Blue will move", "Red will move, then Blue and Pink will move at the same time"];
-        self.questions = self.answers.slice();
-        shuffleArray(self.questions);
+
 
         // define what a moving display is - common to all .tags (see inner starting comments for minor changes according to tag needs)
         self.MovingDisplay = function (colours, mirroring, launchTiming, extraObjs, squareDimensions, canvas, slider = null, speed, showFlash = false) {
@@ -163,20 +182,19 @@
                 for (var i = 0; i < 3; i++) {
                     // start/end positions
                     var square = display.squareList[i];
-                    var sqWidth = display.squareDimensions[0];
                     var startPosition, endPosition;
                     if (i === 0) {
-                        startPosition = display.mirrored ? canvasMargin + 5 * sqWidth : canvasMargin;
-                        endPosition = display.mirrored ? startPosition - 2.5 * sqWidth : canvasMargin + 2.5 *
-                            sqWidth;
+                        startPosition = display.mirrored ? canvasMargin + 5 * display.squareDimensions[0] : canvasMargin;
+                        endPosition = display.mirrored ? startPosition - 2.5 * display.squareDimensions[0] : canvasMargin + 2.5 *
+                            display.squareDimensions[0];
                     } else {
-                        var distanceTravelled = sqWidth + 2 * sqWidth * (i - 1);
+                        var distanceTravelled = display.squareDimensions[0] + 2 * display.squareDimensions[0] * (i - 1);
                         startPosition = display.mirrored ?
-                            display.squareList[0].finalPosition[0] - distanceTravelled - .5 * sqWidth: // if mirrored travel left from A
-                            display.squareList[0].finalPosition[0] + distanceTravelled + .5 * sqWidth; // if not travel right
+                            display.squareList[0].finalPosition[0] - distanceTravelled : // if mirrored travel left from A
+                            display.squareList[0].finalPosition[0] + distanceTravelled; // if not travel right
                         endPosition = display.mirrored ?
-                            startPosition - sqWidth : // same idea
-                            startPosition + sqWidth;
+                            startPosition - display.squareDimensions[0] : // same idea
+                            startPosition + display.squareDimensions[0];
                     }
                     square.startPosition = [startPosition, 100];
                     square.finalPosition = [endPosition, 100];
@@ -230,19 +248,6 @@
                 // and this starts the timing
                 display.setTimeouts(startAt);
             };
-
-            display.getLastFinish = function () {
-                // get list of when each sq finishes moving
-                var finishTimings = [];
-                for (var i = 0; i < 3; i++) {
-                    if (display.squareList[i].colourName !== "hidden") {
-                        finishTimings.push((display.squareList[i].moveAt + display.squareList[i].duration));
-                    }
-                };
-                // and what time is last
-                return Math.max.apply(null, finishTimings);
-            };
-
             display.setTimeouts = function (startInstructions = 1000) {
                 // get list of when each sq finishes moving
                 var finishTimings = display.squareList.map(function (obj) {
@@ -305,7 +310,7 @@
 
                 // stick
                 if (display.squareList[0].colourName !== "hidden") {
-                    var stickSize = squareA.dimensions[0] * 2.5;
+                    var stickSize = squareA.dimensions[0] * 2;
 
                     var startX, endX;
                     if (display.mirrored) {
@@ -330,11 +335,11 @@
 
                 // draw chain
                 if (display.squareList[1].colourName !== "hidden" && display.squareList[2].colourName !== "hidden") {
-                    var squareBMiddleX, squareBY, squareCMiddleX, squareCY;
+                    var squareBMiddleX, squareBY, squareCMiddleX, squareBY;
                     squareBMiddleX = squareB.position[0] + squareB.dimensions[0] * 1 / 2;
                     squareCMiddleX = squareC.position[0] + squareC.dimensions[0] * 1 / 2;
                     squareBY = squareB.position[1] + squareB.dimensions[1] * 9 / 10;
-                    squareCY = squareC.position[1] + squareC.dimensions[1] * 9 / 10;
+                    squareBY = squareC.position[1] + squareC.dimensions[1] * 9 / 10;
 
                     var distanceBetweenSquares, squareMiddlePoint;
                     distanceBetweenSquares = Math.abs(squareBMiddleX - squareCMiddleX);
@@ -347,56 +352,8 @@
                     // chain is Q bezier curve defined by points (squareBMiddleX, squareBY), (squareMiddlePoint, controlPointY) and (squareCMiddleX, squareBY)
                     ctx.beginPath();
                     ctx.moveTo(squareBMiddleX, squareBY);
-                    ctx.quadraticCurveTo(squareMiddlePoint, controlPointY, squareCMiddleX, squareCY);
+                    ctx.quadraticCurveTo(squareMiddlePoint, controlPointY, squareCMiddleX, squareBY);
                     ctx.stroke();
-                }
-
-                // wall
-                if (display.drawWall) {
-                    var wallX;
-                    var wallY = display.squareList[2].startPosition[1] - display.squareDimensions[1];
-                    var wallWidth = 1 * display.squareDimensions[1];
-                    var wallHeight = 3 * display.squareDimensions[1];
-                    if (self.mirroring) {
-                        wallX = display.squareList[2].startPosition[0] + display.squareDimensions[0] - wallWidth - 1;
-                    } else {
-                        wallX = display.squareList[2].startPosition[0] + 1;
-                    }
-
-                    // ctx.beginPath();
-                    // ctx.rect(wallX, wallY, wallWidth, wallHeight);
-                    // ctx.stroke();
-                    ctx.fillStyle = "#c87630";
-                    ctx.fillRect(wallX, wallY, wallWidth, wallHeight);
-                    // bricks
-                    var brickWidth = wallWidth / 3;
-                    var brickHeight = wallHeight / 10;
-                    for (var r = 0; r < 10; r++) {
-                        if (r !== 0) {
-                            // hor lines
-                            ctx.beginPath();
-                            ctx.moveTo(wallX, wallY + r * brickHeight);
-                            ctx.lineTo(wallX + wallWidth, wallY + r * brickHeight);
-                            ctx.stroke();
-                        }
-                        if (r % 2 === 0) {
-                            for (var c = 0; c < 3; c++) {
-                                if (c !== 0) {
-                                    ctx.beginPath();
-                                    ctx.moveTo(wallX + c * brickWidth, wallY + r * brickHeight);
-                                    ctx.lineTo(wallX + c * brickWidth, wallY + (r + 1) * brickHeight);
-                                    ctx.stroke();
-                                }
-                            }
-                        } else {
-                            for (var c = 0; c < 3; c++) {
-                                ctx.beginPath();
-                                ctx.moveTo(wallX + (c + .5) * brickWidth, wallY + r * brickHeight);
-                                ctx.lineTo(wallX + (c + .5) * brickWidth, wallY + (r + 1) * brickHeight);
-                                ctx.stroke();
-                            }
-                        }
-                    }
                 }
             };
             display.displayFlash = function () {
@@ -442,7 +399,6 @@
 
             display.holeColour = "#d9d2a6";
             display.animationStarted = Infinity;
-            display.drawWall = false;
             display.animationEnded = true;
             display.flashState = false; // is the canvas flashing at the moment?
             display.animationTimer = []; // holds all the timeout ids so cancelling is easy
@@ -460,15 +416,6 @@
             self.mirroring = self.experiment.condition.factors.mirroring;
             self.launchTiming = self.experiment.condition.factors.order;
             self.extraObjs = (self.experiment.condition.factors.altExplanation === "present");
-            self.radios = [self.refs.radioA, self.refs.radioB, self.refs.radioC];
-            if (self.extraObjs) {
-                self.answers = ["Red will move and push Pink with the stick, then Pink will move and drag Blue", "Red will move and push Blue, then Blue will move and push Pink", "Red will move push Pink with the stick, then Blue and Pink will move at the same time"];
-            } else {
-                self.answers = ["Red will move and displace Blue, then Blue will move and push Pink", "Red will move and touch Blue, which will make Pink move and after Pink stops moving Blue will move", "Red will move and touch Blue, and then Blue and Pink will move at the same time"];
-            }
-            self.questions = self.answers.slice();
-            shuffleArray(self.questions);
-
 
 
             // make rect
@@ -479,50 +426,101 @@
 
         self.canLeave = function () {
             self.hasErrors = false;
-            if (!self.anyRadiosClicked()) {
-                self.errorText = "Please choose one of the options";
+            if (self.reportedOrder.length < 3) {
+                self.errorText = "Please make sure you put all events in the lower box";
                 self.hasErrors = true;
-                return false;
             } else {
                 return true;
             }
         };
 
         self.results = function () {
-            var answers = self.anyRadiosClicked(true);
-            var answer = self.questions[answers[1]];
-            var verdict;
-            if (answer === self.answers[2]) {
-                verdict = "nonsensical";
-            } else if (answer === self.answers[0]) {
-                verdict = "congruent";
-            } else {
-                verdict = "incongruent"
+            var orderCols = [];
+            for (var i = 0; i < self.reportedOrder.length; i++) {
+                orderCols.push(self.findColour(self.reportedOrder[i]));
             }
-            self.resultDict["expectation"] = self.questions[answers[1]];
-            self.resultDict["verdict"] = verdict;
+            self.resultDict["reportedOrder"] = orderCols;
             return self.resultDict;
         };
 
-        // own funcs
+        // page funcs
+        self.drag = function (ev) {
+            ev.dataTransfer.setData("text", (ev.target.innerText + ";" + ev.target.id));
+            ev.target.style.backgroundColor = "lightGray";
+        };
 
-        self.anyRadiosClicked = function (what=false) {
-            var somethingClicked = false;
-            var whatChecked;
-            for (var i = 0; i < self.radios.length; i++) {
-                if (self.radios[i].checked) {
-                    somethingClicked = true;
-                    whatChecked = i
-                }
+        self.dropAnswer = function (ev) {
+            ev.preventDefault();
+            var data = ev.dataTransfer.getData("text");
+            var col = self.findColour(data);
+            var keyString = "The " + col + " square moves";
+            if (col !== "none" && self.reportedOrder.indexOf(keyString) === -1) {
+                self.reportedOrder.push(keyString);
+                self.events.splice(self.events.indexOf(keyString), 1);
+            } else if (col !== "none" && data.search("answ") !== -1) {
+                var newIndex = Number(ev.target.id[4]) - 1;
+                self.reportedOrder.splice(self.reportedOrder.indexOf(keyString), 1);
+                self.reportedOrder.splice(newIndex, 0, keyString);
+
             }
-            if (!what) {
-                return somethingClicked
-            } else {
-                var returnList = [somethingClicked, whatChecked];
-                return returnList;
+            console.log("dropAnswer: " + data);
 
+
+        };
+        self.dropQuestion = function (ev) {
+            ev.preventDefault();
+            var data = ev.dataTransfer.getData("text");
+            var col = self.findColour(data);
+            var keyString = "The " + col + " square moves";
+            if (col !== "none" && self.events.indexOf(keyString) === -1) {
+                self.events.push(keyString);
+                self.reportedOrder.splice(self.reportedOrder.indexOf(keyString), 1);
+            }
+            console.log("dropQ: " + data);
+
+        };
+
+        self.allowDrop = function (ev) {
+            ev.preventDefault();
+            ev.target.style.backgroundColor = "lightGray";
+        };
+
+        self.findColour = function (text) {
+            if (text.search("red") !== -1) {
+                return "red";
+            } else if (text.search("blue") !== -1) {
+                return "blue";
+            } else if (text.search("pink") !== -1) {
+                return "pink";
+            } else {
+                return "none";
             }
         };
 
+        self.restartDnD = function () {
+            self.events = ["The red square moves", "The blue square moves", "The pink square moves"];
+            shuffleArray(self.events);
+            self.reportedOrder = [];
+        }
+
+        self.returnWhite = function (ev) {
+            ev.target.style.backgroundColor = "white";
+        }
+
+        self.allWhite = function () {
+            console.log("allWhite: " + self.refs.originalContainer.rows);
+            for (var i = 0; i < self.refs.originalContainer.rows.length; i++) {
+                for (var index = 0; index < self.refs.originalContainer.rows[i].cells.length; index++) {
+                    self.refs.originalContainer.rows[i].cells[index].style.backgroundColor = "white";
+                }
+            }
+
+            for (var i = 0; i < self.refs.receivingContainer.rows.length; i++) {
+                for (var index = 0; index < self.refs.receivingContainer.rows[i].cells.length; index++) {
+                    self.refs.receivingContainer.rows[i].cells[index].style.backgroundColor = "white";
+                }
+            }
+
+        }
     </script>
-</expectations>
+</expectations2>
