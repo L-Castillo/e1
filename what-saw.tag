@@ -1,4 +1,4 @@
-<expectations>
+<what-saw>
     <style>
         div#instructions{
             font-size: 22px;
@@ -16,7 +16,7 @@
 
     </style>
     <div id = "instructions">
-        In the next screen you will watch an animation starting like this:
+        In the previous screen you watched an animation starting like this:
     </div>
     <br>
 
@@ -24,16 +24,16 @@
         <canvas width="950" height="400" style="border: solid black 2px" ref="myCanvas"></canvas>
     </div>
     <div style="width: 800px; margin: auto">
-        <p style="font-size: 20px">Knowing that the Red square will be the first to move, choose what you expect will happen: </p>
+        <p style="font-size: 20px">Which option best describes what happened?: </p>
         <form>
-            <input type="radio" name="expect" id="radio1" value="A" ref="radioA">
-            <label for="radio1" id="labelradioA">{questions[0]}</label>
+            <input type="radio" name="expect" id="saw_radio1" value="A" ref="radioA">
+            <label for="saw_radio1" id="labelradioA">{questions[0]}</label>
             <br>
-            <input type="radio" name="expect" id="radio2" value="B" ref="radioB">
-            <label for="radio2" id="labelradioB">{questions[1]}</label>
+            <input type="radio" name="expect" id="saw_radio2" value="B" ref="radioB">
+            <label for="saw_radio2" id="labelradioB">{questions[1]}</label>
             <br>
-            <input type="radio" name="expect" id="radio3" value="C" ref="radioC">
-            <label for="radio3" id="labelradioC">{questions[2]}</label>
+            <input type="radio" name="expect" id="saw_radio3" value="C" ref="radioC">
+            <label for="saw_radio3" id="labelradioC">{questions[2]}</label>
             <br>
         </form>
     </div>
@@ -52,7 +52,7 @@
 
         self.hasErrors = false;
         self.resultDict = {
-            "expectation": "",
+            "whatSaw": "",
             "verdict": "",
         };
 
@@ -462,9 +462,9 @@
             self.extraObjs = (self.experiment.condition.factors.altExplanation === "present");
             self.radios = [self.refs.radioA, self.refs.radioB, self.refs.radioC];
             if (self.extraObjs) {
-                self.answers = ["Red will move and push Pink with the stick, then Pink will move and drag Blue", "Red will move and push Blue, then Blue will move and push Pink", "Red will move push Pink with the stick, then Blue and Pink will move at the same time"];
+                self.answers = ["Red moved and pushed Pink with the stick, then Pink moved and dragged Blue", "Red moved and pushed Blue, then Blue moved and pushed Pink", "Red pushed Pink with the stick, then Blue and Pink moved at the same time"];
             } else {
-                self.answers = ["Red will move and displace Blue, then Blue will move and push Pink", "Red will move and touch Blue, which will make Pink move and after Pink stops moving Blue will move", "Red will move and touch Blue, and then Blue and Pink will move at the same time"];
+                self.answers = ["Red moved and displaced Blue, then Blue moved and pushed Pink", "Red moved and touched Blue, which made Pink move and after Pink stopped moving Blue moved", "Red moved and touched Blue, and then Blue and Pink moved at the same time"];
             }
             self.questions = self.answers.slice();
             shuffleArray(self.questions);
@@ -495,13 +495,12 @@
             if (answer === self.answers[2]) {
                 verdict = "nonsensical";
             } else if (answer === self.answers[0]) {
-                verdict = "congruent";
+                verdict = (self.extraObjs && self.launchTiming === "reversed") || (!self.extraObjs && self.launchTiming === "canonical")? "congruent" : "incongruent";
             } else {
-                verdict = "incongruent"
+                verdict = (!self.extraObjs && self.launchTiming === "reversed") || (self.extraObjs && self.launchTiming === "canonical")? "congruent" : "incongruent";
             }
-            self.resultDict["expectation"] = self.questions[answers[1]];
+            self.resultDict["whatSaw"] = self.questions[answers[1]];
             self.resultDict["verdict"] = verdict;
-            self.resultDict["consistentWReversed"] = (self.extraObjs && verdict === "congruent") || (!self.extraObjs && verdict === "incongruent");
             return self.resultDict;
         };
 
@@ -526,4 +525,4 @@
         };
 
     </script>
-</expectations>
+</what-saw>

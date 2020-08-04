@@ -445,15 +445,20 @@
             // self.rectangle.squareList[1].moveAt = 0;
             self.rectangle.squareList[1].finalPosition[0] = self.mirroring ? self.rectangle.squareList[1].finalPosition[0] - self.rectangle.squareDimensions[0] : self.rectangle.squareList[1].finalPosition[0] + self.rectangle.squareDimensions[0];
 
-            self.rectangle.squareList[0].startPosition = [self.rectangle.squareList[1].startPosition[0], self.rectangle.squareList[1].startPosition[1] + 2 * self.rectangle.squareDimensions[1]];
+            self.rectangle.squareList[0].startPosition = [self.rectangle.squareList[1].startPosition[0], self.rectangle.squareList[1].startPosition[1]];
             self.rectangle.squareList[0].finalPosition[0] = self.rectangle.squareList[1].finalPosition[0];
             self.rectangle.squareList[0].finalPosition[1] = self.rectangle.squareList[0].startPosition[1];
-            self.rectangle.squareList[2].startPosition = [self.rectangle.squareList[1].startPosition[0], self.rectangle.squareList[1].startPosition[1] + 4 * self.rectangle.squareDimensions[1]];
+
+            self.rectangle.squareList[1].startPosition = [self.rectangle.squareList[1].startPosition[0], self.rectangle.squareList[1].startPosition[1] + 2 * self.rectangle.squareDimensions[1]];
+            self.rectangle.squareList[1].finalPosition[0] = self.rectangle.squareList[1].finalPosition[0];
+            self.rectangle.squareList[1].finalPosition[1] = self.rectangle.squareList[1].startPosition[1];
+
+            self.rectangle.squareList[2].startPosition = [self.rectangle.squareList[1].startPosition[0], self.rectangle.squareList[1].startPosition[1] + 2 * self.rectangle.squareDimensions[1]];
             self.rectangle.squareList[2].finalPosition[0] = self.rectangle.squareList[1].finalPosition[0];
             self.rectangle.squareList[2].finalPosition[1] = self.rectangle.squareList[2].startPosition[1];
 
             for (var i = 0; i < 3; i++) {
-                self.rectangle.squareList[i].moveAt = i===2 ? 0 : 400 + (i % 2) * 400;
+                self.rectangle.squareList[i].moveAt = 400 + i * 400;
                 self.rectangle.squareList[i].duration = Math.abs(self.rectangle.squareList[i].finalPosition[0] - self.rectangle.squareList[i].startPosition[0]) / self.rectangle.speed;
             }
 

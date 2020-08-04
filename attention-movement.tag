@@ -1,4 +1,4 @@
-<expectations>
+<attention-movement>
     <style>
         div#instructions{
             font-size: 22px;
@@ -8,41 +8,42 @@
             font-size: 23px;
             text-align: center;
         }
+        button.psychButton:disabled {
+            color: rgba(89, 159, 207, 0.5); /*Text transparent when button disabled*/
+        }
         label {
             font-size: 20px;
             padding-bottom: 5px;
             margin: 5px;
         }
-
     </style>
     <div id = "instructions">
-        In the next screen you will watch an animation starting like this:
+        Please press "Play Animation" to watch how these objects interact.
+        You can press it as many times you need to re-watch the clip.
+        Make sure you understand how the objects interact before pressing "Next"
     </div>
     <br>
-
     <div>
         <canvas width="950" height="400" style="border: solid black 2px" ref="myCanvas"></canvas>
+        <button class="psychButton" onclick="{animate}" style="float:right" ref="btnAnimate">Play animation</button>
+        <div style="width: 450px; margin: auto; display: none" ref="attQuestionBox">
+            <form style="width: 450px; margin: auto" ref = "attMoveQs">
+                <p id = "att1_question" style="font-size: 20px">{"Which square moved first?"}</p>
+                <input type="radio" id="att1_radioA" name="attMove" onclick="{enableActivateButton}" value="A" ref="att1_radioA">
+                <label for="att1_radioA" id="labelradioA">{options[0]}</label>
+                <br>
+                <input type="radio" id="att1_radioB" name="attMove" onclick="{enableActivateButton}" value="B" ref="att1_radioB">
+                <label for="att1_radioB" id="labelradioB">{options[1]}</label>
+                <br>
+                <input type="radio" id="att1_radioC" name="attMove" onclick="{enableActivateButton}" value="C" ref="att1_radioC">
+                <label for="att1_radioC" id="labelradioC">{options[2]}</label>
+                <br>
+            </form>
+        </div>
+        <p class="psychErrorMessage" show="{hasErrors}" style="margin: auto; text-align: center">{errorText}</p>
     </div>
-    <div style="width: 800px; margin: auto">
-        <p style="font-size: 20px">Knowing that the Red square will be the first to move, choose what you expect will happen: </p>
-        <form>
-            <input type="radio" name="expect" id="radio1" value="A" ref="radioA">
-            <label for="radio1" id="labelradioA">{questions[0]}</label>
-            <br>
-            <input type="radio" name="expect" id="radio2" value="B" ref="radioB">
-            <label for="radio2" id="labelradioB">{questions[1]}</label>
-            <br>
-            <input type="radio" name="expect" id="radio3" value="C" ref="radioC">
-            <label for="radio3" id="labelradioC">{questions[2]}</label>
-            <br>
-        </form>
-    </div>
-
-
-    <p class="psychErrorMessage" show="{hasErrors}">{errorText}</p>
 
     <script>
-        var self = this;
         function shuffleArray(array){
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -50,21 +51,17 @@
             }
         }
 
-        self.hasErrors = false;
-        self.resultDict = {
-            "expectation": "",
-            "verdict": "",
-        };
+        var self = this;
 
+        self.possibleMoments = [0];
+        self.timesWatched = [0];
+        self.timeStamps = [];
+        self.options = ["Green", "Black", "Red"];
+        shuffleArray(self.options);
+        self.currentIndex = 0;
+        self.currentMoment = self.possibleMoments[self.currentIndex];
 
-        // test vars that can be changed
-        self.colours = ["red", "blue", "purple"];
-        self.squareDimensions = [50, 50];
-        self.speed = 0.3;
-        self.showFlash = true;
-        self.answers = ["Red will move, then Blue will move, then Pink will move", "Red will move, then Pink will move, then Blue will move", "Red will move, then Blue and Pink will move at the same time"];
-        self.questions = self.answers.slice();
-        shuffleArray(self.questions);
+        self.errorText;
 
         // define what a moving display is - common to all .tags (see inner starting comments for minor changes according to tag needs)
         self.MovingDisplay = function (colours, mirroring, launchTiming, extraObjs, squareDimensions, canvas, slider = null, speed, showFlash = false) {
@@ -279,7 +276,7 @@
                 }
 
                 // draw the hole for middle third of the B square
-                if (display.squareList[1].colourName !== "hidden") {
+                if (display.squareList[1].colourName !== "hidden" && display.drawHole) {
                     ctx.fillStyle = display.holeColour;
                     ctx.fillRect(
                         display.squareList[1].position[0],
@@ -368,7 +365,7 @@
                     // ctx.stroke();
                     ctx.fillStyle = "#c87630";
                     ctx.fillRect(wallX, wallY, wallWidth, wallHeight);
-                    // bricks
+                // bricks
                     var brickWidth = wallWidth / 3;
                     var brickHeight = wallHeight / 10;
                     for (var r = 0; r < 10; r++) {
@@ -443,6 +440,7 @@
             display.holeColour = "#d9d2a6";
             display.animationStarted = Infinity;
             display.drawWall = false;
+            display.drawHole = true;
             display.animationEnded = true;
             display.flashState = false; // is the canvas flashing at the moment?
             display.animationTimer = []; // holds all the timeout ids so cancelling is easy
@@ -454,58 +452,65 @@
             display.reset();
         };
 
+
         // overwrite funcs
-        self.onInit = function () {
-            // get condition info + mirroring
-            self.mirroring = self.experiment.condition.factors.mirroring;
-            self.launchTiming = self.experiment.condition.factors.order;
-            self.extraObjs = (self.experiment.condition.factors.altExplanation === "present");
-            self.radios = [self.refs.radioA, self.refs.radioB, self.refs.radioC];
-            if (self.extraObjs) {
-                self.answers = ["Red will move and push Pink with the stick, then Pink will move and drag Blue", "Red will move and push Blue, then Blue will move and push Pink", "Red will move push Pink with the stick, then Blue and Pink will move at the same time"];
+        self.canLeave = function () {
+            if (self.currentIndex === 0) {
+                if (self.rectangle.animationStarted === Infinity) {
+                    self.hasErrors = true;
+                    self.errorText = "Please watch the animation";
+                    return false;
+                } else if (!self.rectangle.animationEnded) {
+                    self.hasErrors = true;
+                    self.errorText = "Please finish the animation before continuing";
+                    return false;
+                } else {
+                    // set up question
+                    self.rectangle.reset();
+                    self.currentIndex++;
+                    self.refs.btnAnimate.style.display = "none";
+                    self.refs.attQuestionBox.style.display = "inline";
+                    self.rectangle.reset();
+                    self.rectangle.draw();
+                }
             } else {
-                self.answers = ["Red will move and displace Blue, then Blue will move and push Pink", "Red will move and touch Blue, which will make Pink move and after Pink stops moving Blue will move", "Red will move and touch Blue, and then Blue and Pink will move at the same time"];
+                // has participant answered?
+                if (!self.anyRadiosClicked()) {
+                    self.hasErrors = true;
+                    self.errorText = "Please choose an option";
+                } else {
+                    return true;
+                }
             }
-            self.questions = self.answers.slice();
-            shuffleArray(self.questions);
-
-
-
-            // make rect
-            self.rectangle = new self.MovingDisplay(self.colours, self.mirroring, self.launchTiming, self.extraObjs, self.squareDimensions, self.refs.myCanvas, null, self.speed, false);
 
         };
 
+        self.onInit = function () {
+            self.mirroring = self.experiment.condition.factors.mirroring;
+            self.extraObjs = self.experiment.condition.factors.altExplanation === "present";
+            self.updateCanvas();
+            self.radios = [self.refs.att1_radioA, self.refs.att1_radioB, self.refs.att1_radioC];
 
-        self.canLeave = function () {
-            self.hasErrors = false;
-            if (!self.anyRadiosClicked()) {
-                self.errorText = "Please choose one of the options";
-                self.hasErrors = true;
-                return false;
-            } else {
-                return true;
-            }
         };
 
         self.results = function () {
-            var answers = self.anyRadiosClicked(true);
-            var answer = self.questions[answers[1]];
-            var verdict;
-            if (answer === self.answers[2]) {
-                verdict = "nonsensical";
-            } else if (answer === self.answers[0]) {
-                verdict = "congruent";
-            } else {
-                verdict = "incongruent"
-            }
-            self.resultDict["expectation"] = self.questions[answers[1]];
-            self.resultDict["verdict"] = verdict;
-            self.resultDict["consistentWReversed"] = (self.extraObjs && verdict === "congruent") || (!self.extraObjs && verdict === "incongruent");
-            return self.resultDict;
+            return {"watchTimes": self.timesWatched, "paysAttention": self.options[self.anyRadiosClicked(true)[1]] === "Red"};
+
         };
 
-        // own funcs
+        // page specific functions
+        self.animate = function () {
+            self.switchAnimateDisabled();
+            self.timesWatched[self.currentMoment]++;
+            self.hasErrors = false;
+            self.rectangle.animate(500);
+            window.setTimeout(self.switchAnimateDisabled, self.rectangle.getLastFinish() + 750);
+
+        };
+        self.switchAnimateDisabled = function () {
+            self.refs.btnAnimate.disabled = !self.refs.btnAnimate.disabled;
+
+        };
 
         self.anyRadiosClicked = function (what=false) {
             var somethingClicked = false;
@@ -516,14 +521,47 @@
                     whatChecked = i
                 }
             }
+
             if (!what) {
                 return somethingClicked
             } else {
-                var returnList = [somethingClicked, whatChecked];
-                return returnList;
+                return [somethingClicked, whatChecked];
 
+            }
+        };
+        self.updateCanvas = function () {
+            if (self.currentMoment === 0) {
+                self.rectangle = new self.MovingDisplay(["black", "red", "green"], self.mirroring, "reversed", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
+                // self.rectangle.squareList[1].moveAt = 0;
+                self.rectangle.drawHole = false;
+                self.rectangle.squareList[1].finalPosition[0] = self.mirroring ? self.rectangle.squareList[1].finalPosition[0] - self.rectangle.squareDimensions[0] : self.rectangle.squareList[1].finalPosition[0] + self.rectangle.squareDimensions[0];
+
+                self.rectangle.squareList[0].startPosition = [self.rectangle.squareList[1].startPosition[0], self.rectangle.squareList[1].startPosition[1]];
+                self.rectangle.squareList[0].finalPosition[0] = self.rectangle.squareList[1].finalPosition[0];
+                self.rectangle.squareList[0].finalPosition[1] = self.rectangle.squareList[0].startPosition[1];
+
+                self.rectangle.squareList[1].startPosition = [self.rectangle.squareList[1].startPosition[0], self.rectangle.squareList[1].startPosition[1] + 2 * self.rectangle.squareDimensions[1]];
+                self.rectangle.squareList[1].finalPosition[0] = self.rectangle.squareList[1].finalPosition[0];
+                self.rectangle.squareList[1].finalPosition[1] = self.rectangle.squareList[1].startPosition[1];
+
+                self.rectangle.squareList[2].startPosition = [self.rectangle.squareList[1].startPosition[0], self.rectangle.squareList[1].startPosition[1] + 2 * self.rectangle.squareDimensions[1]];
+                self.rectangle.squareList[2].finalPosition[0] = self.rectangle.squareList[1].finalPosition[0];
+                self.rectangle.squareList[2].finalPosition[1] = self.rectangle.squareList[2].startPosition[1];
+
+
+                self.rectangle.squareList[0].moveAt = 400;
+                self.rectangle.squareList[1].moveAt = 0;
+                self.rectangle.squareList[2].moveAt = 800;
+
+                for (var i = 0; i < 3; i++) {
+                    self.rectangle.squareList[i].duration = Math.abs(self.rectangle.squareList[i].finalPosition[0] - self.rectangle.squareList[i].startPosition[0]) / self.rectangle.speed;
+                }
+
+                self.rectangle.reset();
+                self.rectangle.draw();
             }
         };
 
     </script>
-</expectations>
+
+</attention-movement>

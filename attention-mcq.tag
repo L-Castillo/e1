@@ -1,72 +1,54 @@
-<expectations>
+<attention-mcq>
     <style>
+        button.psychButton:disabled {
+            color: rgba(89, 159, 207, 0.5); /*Text transparent when button disabled*/
+        }
         div#instructions{
             font-size: 22px;
             padding: 20px;
         }
-        .psychErrorMessage{ /*override style*/
-            font-size: 23px;
-            text-align: center;
+        p#question {
+            font-size: 22px;
+            margin: 10px;
         }
         label {
             font-size: 20px;
             padding-bottom: 5px;
             margin: 5px;
         }
-
-    </style>
-    <div id = "instructions">
-        In the next screen you will watch an animation starting like this:
-    </div>
-    <br>
-
-    <div>
-        <canvas width="950" height="400" style="border: solid black 2px" ref="myCanvas"></canvas>
-    </div>
-    <div style="width: 800px; margin: auto">
-        <p style="font-size: 20px">Knowing that the Red square will be the first to move, choose what you expect will happen: </p>
-        <form>
-            <input type="radio" name="expect" id="radio1" value="A" ref="radioA">
-            <label for="radio1" id="labelradioA">{questions[0]}</label>
-            <br>
-            <input type="radio" name="expect" id="radio2" value="B" ref="radioB">
-            <label for="radio2" id="labelradioB">{questions[1]}</label>
-            <br>
-            <input type="radio" name="expect" id="radio3" value="C" ref="radioC">
-            <label for="radio3" id="labelradioC">{questions[2]}</label>
-            <br>
-        </form>
-    </div>
-
-
-    <p class="psychErrorMessage" show="{hasErrors}">{errorText}</p>
-
-    <script>
-        var self = this;
-        function shuffleArray(array){
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
+        input {
+            margin: 5px;
+        }
+        .psychErrorMessage{ /*override style*/
+            font-size: 23px;
+            text-align: center;
         }
 
-        self.hasErrors = false;
-        self.resultDict = {
-            "expectation": "",
-            "verdict": "",
-        };
+    </style>
+    <div id = "instructions">{instructionText}</div>
+    <br>
+    <div style="width: 950px">
+        <canvas width="950" height="400" style="border: solid black 2px" ref="myCanvas"></canvas> </div>
+    <div style="width: 450px; margin: auto">
+        <form ref = "radioCont2">
+            <p id = "question" ref="radioQuestions">{"In the above image, which square is most to the right?"}</p>
+            <input type="radio" id="att2_radioA" name="att_mcq" onclick="{hideMessages}" value="A" ref="att2_radioA">
+            <label for="att2_radioA" id="labelradioA">{options[0]}</label>
+            <br>
+            <input type="radio" id="att2_radioB" name="att_mcq" onclick="{hideMessages}" value="B" ref="att2_radioB">
+            <label for="att2_radioB" id="labelradioB">{options[1]}</label>
+            <br>
+            <input type="radio" id="att2_radioC" name="att_mcq" onclick="{hideMessages}" value="C" ref="att2_radioC">
+            <label for="att2_radioC" id="labelradioC">{options[2]}</label>
+            <br>
+        </form>
+        <p class="psychErrorMessage" show="{hasErrors}">{errorText}</p>
+    </div>
+    <script>
+
+        var self = this;
 
 
-        // test vars that can be changed
-        self.colours = ["red", "blue", "purple"];
-        self.squareDimensions = [50, 50];
-        self.speed = 0.3;
-        self.showFlash = true;
-        self.answers = ["Red will move, then Blue will move, then Pink will move", "Red will move, then Pink will move, then Blue will move", "Red will move, then Blue and Pink will move at the same time"];
-        self.questions = self.answers.slice();
-        shuffleArray(self.questions);
-
-        // define what a moving display is - common to all .tags (see inner starting comments for minor changes according to tag needs)
         self.MovingDisplay = function (colours, mirroring, launchTiming, extraObjs, squareDimensions, canvas, slider = null, speed, showFlash = false) {
             // What's different about this Moving Display?
             // nothing
@@ -279,7 +261,7 @@
                 }
 
                 // draw the hole for middle third of the B square
-                if (display.squareList[1].colourName !== "hidden") {
+                if (display.squareList[1].colourName !== "hidden" && display.drawHole) {
                     ctx.fillStyle = display.holeColour;
                     ctx.fillRect(
                         display.squareList[1].position[0],
@@ -443,6 +425,7 @@
             display.holeColour = "#d9d2a6";
             display.animationStarted = Infinity;
             display.drawWall = false;
+            display.drawHole = true;
             display.animationEnded = true;
             display.flashState = false; // is the canvas flashing at the moment?
             display.animationTimer = []; // holds all the timeout ids so cancelling is easy
@@ -454,58 +437,36 @@
             display.reset();
         };
 
-        // overwrite funcs
-        self.onInit = function () {
-            // get condition info + mirroring
-            self.mirroring = self.experiment.condition.factors.mirroring;
-            self.launchTiming = self.experiment.condition.factors.order;
-            self.extraObjs = (self.experiment.condition.factors.altExplanation === "present");
-            self.radios = [self.refs.radioA, self.refs.radioB, self.refs.radioC];
-            if (self.extraObjs) {
-                self.answers = ["Red will move and push Pink with the stick, then Pink will move and drag Blue", "Red will move and push Blue, then Blue will move and push Pink", "Red will move push Pink with the stick, then Blue and Pink will move at the same time"];
-            } else {
-                self.answers = ["Red will move and displace Blue, then Blue will move and push Pink", "Red will move and touch Blue, which will make Pink move and after Pink stops moving Blue will move", "Red will move and touch Blue, and then Blue and Pink will move at the same time"];
-            }
-            self.questions = self.answers.slice();
-            shuffleArray(self.questions);
 
 
-
-            // make rect
-            self.rectangle = new self.MovingDisplay(self.colours, self.mirroring, self.launchTiming, self.extraObjs, self.squareDimensions, self.refs.myCanvas, null, self.speed, false);
-
-        };
-
-
+        // override functions
         self.canLeave = function () {
-            self.hasErrors = false;
             if (!self.anyRadiosClicked()) {
-                self.errorText = "Please choose one of the options";
+                self.errorText = "Please choose an option";
                 self.hasErrors = true;
-                return false;
             } else {
                 return true;
             }
         };
 
-        self.results = function () {
-            var answers = self.anyRadiosClicked(true);
-            var answer = self.questions[answers[1]];
-            var verdict;
-            if (answer === self.answers[2]) {
-                verdict = "nonsensical";
-            } else if (answer === self.answers[0]) {
-                verdict = "congruent";
-            } else {
-                verdict = "incongruent"
-            }
-            self.resultDict["expectation"] = self.questions[answers[1]];
-            self.resultDict["verdict"] = verdict;
-            self.resultDict["consistentWReversed"] = (self.extraObjs && verdict === "congruent") || (!self.extraObjs && verdict === "incongruent");
-            return self.resultDict;
+        self.onInit = function () {
+            self.mirroring = self.experiment.condition.factors.mirroring;
+            self.extraObjs = self.experiment.condition.factors.altExplanation === "present";
+            self.radios = [self.refs.att2_radioA, self.refs.att2_radioB, self.refs.att2_radioC];
         };
 
-        // own funcs
+        self.onShown = function () {
+            self.rectangle = new self.MovingDisplay(["black", "green", "red"], self.mirroring, "reversed", false, [50, 50], self.refs.myCanvas, null, 0.3, false);
+            self.rectangle.drawHole = false;
+            self.rectangle.draw();
+        };
+
+        self.results = function () {
+            var answer = self.options[self.anyRadiosClicked(true)[1]];
+            self.pageResults["paysAttention"] = self.mirroring ? answer === "Black" : answer === "Red";
+            return self.pageResults;
+        };
+
 
         self.anyRadiosClicked = function (what=false) {
             var somethingClicked = false;
@@ -519,11 +480,36 @@
             if (!what) {
                 return somethingClicked
             } else {
-                var returnList = [somethingClicked, whatChecked];
-                return returnList;
+                return [somethingClicked, whatChecked];
 
             }
         };
 
+        self.hideMessages = function () {
+            self.hasErrors = false;
+            self.feedbackTime = false;
+        };
+
+        function shuffleArray(array){
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // shuffle questions
+        self.possibleMoments = [0];
+        self.options = ["Black", "Red", "Green"];
+        shuffleArray(self.options);
+        self.instructionText = "Please select an answer to the following question, then press \"Next\"";
+        self.currentIndex = 0;
+        self.currentMoment = self.possibleMoments[self.currentIndex];
+
+        self.feedbackTime = false;
+        self.pageResults = {};
+        self.errorText;
+
+
     </script>
-</expectations>
+
+</attention-mcq>

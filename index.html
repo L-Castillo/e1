@@ -9,14 +9,18 @@
 </head>
 <body>
 
-<experiment is-debug="{true}" fly-through="{false}" name="lucasExpLive"
+<experiment is-debug="{true}" fly-through="{false}" name="lucasExp"
             style="display: none;" width="960"
             block-by-ip="{true}" title="Experiment"
             whitelist-ips="{['']}"
-            factors="{{altExplanation:['present', 'absent'], order: ['canonical','reversed'], mirroring: [Math.floor(Math.random() * 2) === 0]}}"
+            factors="{{altExplanation:['present', 'absent'], order: ['canonical', 'reversed'], mirroring: [Math.floor(Math.random() * 2) === 0]}}"
+            completion-code = "{'placeholderCode'}"
 >
-
-
+    <attention-movement></attention-movement>
+    <attention-mcq></attention-mcq>
+    <what-saw></what-saw>
+    <prolific></prolific>
+    <goToProlific></goToProlific>
 
     <instructions process="{true}">
         Hello and thank you for taking part in this experiment.
@@ -35,15 +39,6 @@
         If you believe you will be affected please leave the experiment now.
     </instructions>
 
-    <!--    TEST TAGS -->
-    
-    <training-movement></training-movement>
-    <checking-training></checking-training>
-    <slider-practice></slider-practice>
-    <expectations></expectations>
-    <test-trial></test-trial>
-
-
     <gdpr institution="UCL" principal="Lucas Castillo" email="lucas.castillo.19@ucl.ac.uk" ethics="EP/2017/005" controller="data-protection@ucl.ac.uk"></gdpr>
 
     <consent></consent>
@@ -54,8 +49,9 @@
          Afterwards, you will be asked to predict how an animation will end.
      </instructions>
 
+    <attention-movement></attention-movement>
     <training-movement></training-movement>
-
+    <attention-mcq></attention-mcq>
     <checking-training></checking-training>
 
     <instructions process="{true}">
@@ -76,11 +72,15 @@
 
     <test-trial></test-trial>
 
+    <what-saw></what-saw>
+
     <demographics></demographics>
 
     <feedback></feedback>
 
-    <turk></turk>
+    <prolific></prolific>
+
+    <goToProlific></goToProlific>
 
 </experiment>
 
