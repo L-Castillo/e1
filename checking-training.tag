@@ -473,12 +473,12 @@
             // shuffle MCQ possible answers
             self.moment0Qs = ["Pink and Blue will move at the same time", "Pink will move but Blue will not", "Pink will move and then drag Blue"];
             self.moment1Qs = ["Pink and Blue will move at the same time", "Blue will move but Pink will not", "Blue will move and push Pink"];
-            self.moment2Qs = ["Red will move and push Blue with the stick", "Red will move and the stick go through Blue", "Red and Blue will move at the same time"];
+            self.moment2Qs = ["Red will move and push Blue with the stick", "Red will move and the stick will go through Blue", "Red and Blue will move at the same time"];
             self.moment3Qs = ["Red will move and " + (self.extraObjs ? "push" : "displace") + " Blue", "Red will move and Blue will not", "Red and Blue will move at the same time"];
             self.moment4Qs = ["Red will move and push Pink with the stick", "Red will move and Pink will not", "Red and Pink will move at the same time"];
             self.questionsStandardOrder = [self.moment0Qs, self.moment1Qs, self.moment2Qs, self.moment3Qs, self.moment4Qs];
             // define correct answers
-            self.answers = ["Pink will move and then drag Blue", "Blue will move and push Pink", "Red will move and the stick go through Blue", "Red will move and " + (self.extraObjs ? "push" : "displace") + " Blue", "Red will move and push Pink with the stick"];
+            self.answers = ["Pink will move and then drag Blue", "Blue will move and push Pink", "Red will move and the stick will go through Blue", "Red will move and " + (self.extraObjs ? "push" : "displace") + " Blue", "Red will move and push Pink with the stick"];
 
             self.shuffleMCQs();
         };
