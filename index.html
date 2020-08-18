@@ -13,8 +13,8 @@
             style="display: none;" width="960"
             block-by-ip="{true}" title="Experiment"
             whitelist-ips="{['']}"
-            factors="{{altExplanation:['present'], order: ['reversed'], mirroring: [Math.floor(Math.random() * 2) === 0]}}"
-            completion-code = "{'placeholderCode'}"
+            factors="{{altExplanation:['present', 'absent'], order: ['canonical', 'reversed'], mirroring: [Math.floor(Math.random() * 2) === 0]}}"
+            completion-code = "{'5D418A0C'}"
 >
 
     <instructions process="{true}">
@@ -45,8 +45,11 @@
      </instructions>
 
     <attention-movement></attention-movement>
+
     <training-movement></training-movement>
+
     <attention-mcq></attention-mcq>
+
     <checking-training></checking-training>
 
     <instructions process="{true}">
@@ -76,7 +79,7 @@
     <prolific></prolific>
 
     <go-to-prolific></go-to-prolific>
-    
+
 </experiment>
 
 
